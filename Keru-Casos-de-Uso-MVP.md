@@ -1,9 +1,9 @@
 # Keru — Casos de Uso del MVP
 
-> **Fuente:** `Keru-Scope-MVP.docx.pdf` (Alcance del MVP / Scope de Salida) + **decisiones de producto del 2026-07-09**: aprobación previa de cuidadores por el admin, carga de datos clínicos también por familiares, historial de cuidadores con recontratación, reseñas bidireccionales, alertas obligatorias con centro de notificaciones, vínculo familiar–paciente por **código de invitación**, el cuidador **acepta** las solicitudes, y el **módulo de pagos queda pendiente de decisión** (fuera de los casos de uso por ahora).
+> **Fuente:** `Keru-Scope-MVP.docx.pdf` (Alcance del MVP / Scope de Salida) + **decisiones de producto del 2026-07-09**: aprobación previa de cuidadores por el admin, carga de datos clínicos también por familiares, historial de cuidadores con recontratación, reseñas bidireccionales, alertas obligatorias con centro de notificaciones, vínculo familiar–paciente por **código de invitación**, el cuidador **acepta** las solicitudes, el **módulo de pagos queda pendiente de decisión** (fuera de los casos de uso por ahora), y una **cuenta puede administrar varios perfiles de paciente** (p. ej. madre y padre) con búsquedas y contrataciones por perfil.
 > **Propósito:** documento de casos de uso listo para alimentar Spec Kit (`/specify`) o una herramienta de IA de diseño de arquitectura.
 > Los supuestos de versiones anteriores (UC-03 y UC-10) ya fueron resueltos por decisiones de producto — no quedan supuestos abiertos.
-> **Numeración:** UC-20 y UC-21 fueron agregados por decisiones de producto posteriores al scope original y se ubican dentro de su módulo. **UC-11 queda reservado** para el módulo de pagos (pendiente de decisión).
+> **Numeración:** UC-20, UC-21 y UC-22 fueron agregados por decisiones de producto posteriores al scope original y se ubican dentro de su módulo. **UC-11 queda reservado** para el módulo de pagos (pendiente de decisión).
 
 ---
 
@@ -21,7 +21,7 @@ Keru es un marketplace de cuidadores ("el Uber de los cuidadores") que conecta p
 
 | Actor | Descripción |
 |---|---|
-| **Paciente** | Persona que recibe el cuidado. Tiene una ficha con datos clínicos básicos. Puede buscar y contratar cuidadores para sí mismo, ver su historial de cuidadores y reseñar. |
+| **Paciente** | Persona que recibe el cuidado. Tiene una ficha con datos clínicos básicos. Una **cuenta** de este tipo puede administrar **varios perfiles de paciente** (p. ej. dar de alta a la madre y al padre) y buscar/contratar cuidadores para cada perfil, ver su historial de cuidadores y reseñar. |
 | **Familiar** | Persona vinculada al paciente mediante **código de invitación**. Busca y contrata cuidadores, consulta el estado del paciente y **también carga datos clínicos** (métricas, medicación, novedades), igual que el cuidador. |
 | **Cuidador** | Profesional que presta el servicio. Publica su perfil (especialidades, certificaciones, disponibilidad, tarifas), **acepta o rechaza solicitudes**, registra las métricas del paciente durante su turno y reseña al paciente al finalizar el servicio. Su cuenta debe ser aprobada por el administrador antes de ser visible en el marketplace. |
 | **Administrador de plataforma** | Rol interno que **aprueba las cuentas nuevas de cuidadores** antes de que sean visibles en el marketplace, ejecuta la verificación manual de credenciales/identidad/antecedentes y otorga las insignias de verificación. |
@@ -44,6 +44,7 @@ flowchart LR
         UC03[UC-03 Vincular familiar por invitación]
         UC04[UC-04 Iniciar sesión por rol]
         UC05[UC-05 Asignar cuidador a paciente]
+        UC22[UC-22 Gestionar perfiles de paciente]
     end
 
     subgraph B[Marketplace]
@@ -79,8 +80,8 @@ flowchart LR
         UC19[UC-19 Aprobar y verificar cuidador]
     end
 
-    FAM --> UC01 & UC03 & UC04 & UC06 & UC07 & UC08 & UC09 & UC12 & UC13 & UC14 & UC15 & UC16 & UC17 & UC18 & UC20
-    PAC --> UC01 & UC03 & UC04 & UC06 & UC07 & UC08 & UC09 & UC16 & UC17
+    FAM --> UC01 & UC03 & UC04 & UC06 & UC07 & UC08 & UC09 & UC12 & UC13 & UC14 & UC15 & UC16 & UC17 & UC18 & UC20 & UC22
+    PAC --> UC01 & UC03 & UC04 & UC06 & UC07 & UC08 & UC09 & UC16 & UC17 & UC22
     CUI --> UC02 & UC04 & UC10 & UC12 & UC13 & UC20 & UC21
     ADM --> UC05 & UC19
 ```
@@ -98,8 +99,8 @@ flowchart LR
 #### UC-01 · Registrar paciente
 - **Actor principal:** Familiar o Paciente
 - **Referencia al scope:** §3.1
-- **Descripción:** Dar de alta la ficha del paciente con sus datos personales y clínicos básicos.
-- **Precondiciones:** Ninguna (o usuario autenticado si la ficha la crea un familiar ya registrado).
+- **Descripción:** Dar de alta la ficha (perfil) del paciente con sus datos personales y clínicos básicos. Una misma cuenta puede dar de alta **varios perfiles de paciente** (UC-22) — p. ej. la madre y el padre.
+- **Precondiciones:** Ninguna (o usuario autenticado si la ficha la crea una cuenta ya registrada).
 - **Flujo principal:**
   1. El usuario ingresa los datos personales: nombre, edad, fecha de nacimiento y foto.
   2. Ingresa la condición principal a asistir.
@@ -114,6 +115,7 @@ flowchart LR
   - [ ] La ficha guarda: nombre, edad, fecha de nacimiento, foto, condición principal, grupo sanguíneo, alergias y contacto de emergencia.
   - [ ] La edad puede derivarse de la fecha de nacimiento (evitar inconsistencia entre ambas).
   - [ ] La ficha queda disponible para los flujos de contratación (UC-09) y seguimiento (UC-14).
+  - [ ] Una cuenta puede crear y administrar más de un perfil de paciente (UC-22).
 
 ---
 
@@ -204,6 +206,25 @@ flowchart LR
 
 ---
 
+#### UC-22 · Gestionar perfiles de paciente de una cuenta *(agregado por decisión de producto)*
+- **Actor principal:** Titular de la cuenta (paciente o familiar)
+- **Referencia al scope:** no estaba en el scope original; decisión de producto
+- **Descripción:** Una misma cuenta puede administrar **varios perfiles de paciente**. Ejemplo: una persona da de alta a su madre y a su padre como pacientes y contrata cuidadores para cada uno. Toda operación sobre un paciente (búsqueda, contratación, carga de datos, seguimiento, invitaciones) se hace **en el contexto de un perfil seleccionado**.
+- **Precondiciones:** Cuenta registrada.
+- **Flujo principal:**
+  1. El titular ve la lista de sus perfiles de paciente.
+  2. Agrega un nuevo perfil (UC-01), edita uno existente o lo selecciona como contexto activo.
+  3. El sistema muestra un selector de perfil visible en las secciones por-paciente (búsqueda, contrataciones, seguimiento).
+- **Flujos alternativos / excepciones:**
+  - A1. El titular es también paciente: puede tener su propio perfil ("yo") junto a los de otras personas.
+- **Postcondiciones:** Perfiles disponibles como contexto para el resto de los casos de uso.
+- **Criterios de aceptación:**
+  - [ ] Una cuenta puede tener 1..n perfiles de paciente.
+  - [ ] Cada contratación, registro clínico, invitación y reseña queda asociado a **un perfil concreto**, nunca a la cuenta en general.
+  - [ ] Cambiar de perfil cambia el contexto de búsqueda, contrataciones y seguimiento sin cerrar sesión.
+
+---
+
 ### Módulo B — Marketplace de cuidadores (scope §3.2)
 
 ---
@@ -214,7 +235,7 @@ flowchart LR
 - **Descripción:** Eje central de la plataforma: buscador de cuidadores con filtros combinables.
 - **Precondiciones:** Usuario autenticado como familiar o paciente.
 - **Flujo principal:**
-  1. El usuario abre el buscador del marketplace.
+  1. El usuario abre el buscador del marketplace y, si su cuenta administra varios perfiles de paciente (UC-22), indica para qué paciente busca — puede hacer **búsquedas separadas por paciente o una sola búsqueda para más de uno**.
   2. Aplica filtros:
      - **Zona / ubicación** del servicio y **modalidad** (domicilio u hospital).
      - **Tipo de enfermedad o cuidado**: adultos mayores, post-quirúrgico, enfermedad crónica, discapacidad, paliativos, pediátrico, rehabilitación, acompañamiento.
@@ -228,6 +249,7 @@ flowchart LR
   - [ ] Solo aparecen cuidadores con **cuenta aprobada** por el administrador (UC-19).
   - [ ] Los filtros son combinables (zona + tipo de cuidado + disponibilidad + tarifa + modalidad).
   - [ ] La reputación (calificación y reseñas) y las insignias de verificación son visibles ya desde el listado, porque son criterio de elección.
+  - [ ] La búsqueda opera en el contexto de uno o más perfiles de paciente (UC-22); al contratar para varios pacientes se genera una solicitud por paciente (UC-09).
 
 ---
 
@@ -271,17 +293,18 @@ flowchart LR
 #### UC-09 · Crear solicitud de contratación (booking)
 - **Actor principal:** Familiar o Paciente
 - **Referencia al scope:** §3.2
-- **Descripción:** Solicitar la contratación de un cuidador para un paciente (primera vez o **recontratación** desde el historial, UC-16).
+- **Descripción:** Solicitar la contratación de un cuidador para un paciente (primera vez o **recontratación** desde el historial, UC-16). Si la cuenta administra varios perfiles (UC-22), la solicitud indica para **qué paciente** es; para contratar al mismo cuidador para dos pacientes se genera **una solicitud por paciente**.
 - **Precondiciones:** Ficha de paciente existente (UC-01); cuidador elegido.
 - **Flujo principal:**
   1. El usuario inicia la solicitud desde el perfil del cuidador.
-  2. Completa: **datos del paciente** (selección de la ficha), **modalidad** (domicilio u hospital), **fechas**, **requerimientos especiales** y **datos de contacto**.
+  2. Completa: **datos del paciente** (selección del perfil, UC-22), **modalidad** (domicilio u hospital), **fechas**, **requerimientos especiales** y **datos de contacto**.
   3. El sistema registra la solicitud y la deja visible para el cuidador.
 - **Flujos alternativos / excepciones:**
   - A1. Fechas fuera de la disponibilidad publicada del cuidador: el sistema lo advierte.
 - **Postcondiciones:** Solicitud creada en estado inicial (pendiente), asociada a paciente, solicitante y cuidador.
 - **Criterios de aceptación:**
   - [ ] La solicitud captura: paciente, modalidad, fechas, requerimientos especiales y datos de contacto.
+  - [ ] Cada solicitud pertenece a **un único paciente**; contratar para varios pacientes genera solicitudes separadas, y el cuidador acepta o rechaza cada una por separado (UC-10).
   - [ ] La solicitud tiene un ciclo de vida con estados: **pendiente → aceptada / rechazada → en curso → finalizada**, que habilita los flujos posteriores de asignación, métricas y reseñas. *(Si se incluye el módulo de pagos, se insertará un estado "pagada" entre la aceptación y el inicio del servicio.)*
 
 ---
@@ -538,8 +561,8 @@ flowchart LR
 
 | Entidad | Atributos clave | Relaciones |
 |---|---|---|
-| **Usuario** | credenciales, rol (paciente / familiar / cuidador / admin) | — |
-| **Paciente** | nombre, edad, fecha de nacimiento, foto, condición principal, grupo sanguíneo, alergias, contacto de emergencia, reputación (reseñas de cuidadores) | 1..n Familiares; 0..n Asignaciones (vigentes e históricas); 0..n Reseñas recibidas |
+| **Usuario (Cuenta)** | credenciales, rol (paciente / familiar / cuidador / admin) | 1..n Perfiles de Paciente administrados (UC-22, para cuentas paciente/familiar) |
+| **Paciente (perfil)** | nombre, edad, fecha de nacimiento, foto, condición principal, grupo sanguíneo, alergias, contacto de emergencia, reputación (reseñas de cuidadores) | pertenece a una Cuenta titular; 1..n Familiares; 0..n Asignaciones (vigentes e históricas); 0..n Reseñas recibidas |
 | **Familiar** | datos personales | n..n Pacientes (vínculo con permiso de lectura y carga, creado por invitación) |
 | **InvitaciónFamiliar** | código/link único, paciente, emisor, estado (pendiente / aceptada / vencida), fecha | Paciente → Familiar invitado |
 | **Cuidador** | **estado de cuenta (pendiente / aprobada / rechazada)**, especialidades, experiencia, disponibilidad horaria, tarifas/planes, zona, modalidades | 1..n Certificaciones; 0..n Insignias; 0..n Reseñas recibidas |
