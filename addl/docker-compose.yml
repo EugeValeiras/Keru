@@ -1,0 +1,43 @@
+# ADDL — portable deployment (PLAN.md §11, "distribución v2").
+#
+# Copy this file into the root of the project you want to architect, as
+# `docker-compose.yml`. No .env, no repo clone, no skill install needed:
+# the image bundles the sad-* skill and seeds it into this project's
+# .claude/skills/ on first startup (skipped if the project already has one).
+#
+#   docker compose run --rm auth   # first time only — OAuth paste-the-code
+#   docker compose up              # http://localhost:3010 (HOST_PORT to change)
+#
+# Requires the image in the local Docker store (or a registry you can pull
+# from): build it from the ADDL repo with `docker build -t addl:0.1.0 .`
+#
+# The claude-creds volume has a FIXED name shared with the ADDL repo's own
+# docker-compose.yml — authenticate once, reuse from every project.
+
+services:
+  auth:
+    image: addl
+    profiles: ["auth"]
+    volumes:
+      - claude-creds:/root/.claude
+    entrypoint: ["claude"]
+    command: ["auth", "login"]
+    stdin_open: true
+    tty: true
+
+  app:
+    image: addl
+    volumes:
+      # The project this compose file lives in — relative paths resolve
+      # against the compose file's directory.
+      - .:/workspace
+      # rw: Claude Code rotates the OAuth access token mid-session and needs
+      # write-back (see the ADDL repo's docker-compose.yml for the long note).
+      - claude-creds:/root/.claude
+    ports:
+      # Container side stays 3000 (the image's PORT default).
+      - "${HOST_PORT:-3010}:3000"
+
+volumes:
+  claude-creds:
+    name: claude-creds
