@@ -9,8 +9,8 @@ This file describes the **runtime flow** of the meta-skill (one sub-skill at a t
 ```
 Project: Keru -- caregiver marketplace MVP
 Iteration: 1
-Current step: S1b
-Last update: 2026-07-10
+Current step: S7
+Last update: 2026-07-11
 Open blockers: none
 Input corpus: docs/documents/Keru-Casos-de-Uso-MVP.md (Spanish; rich documentation input --
   one use-case corpus layering the original scope (Keru-Scope-MVP.docx.pdf) with
@@ -25,13 +25,13 @@ This compact table is the **authoritative gate state** -- faster to update than 
 | Gate | Fragment | State | Approved on |
 |---|---|---|---|
 | S1a | business-view.md | `[x]` | 2026-07-10 |
-| S1b | naive-architecture.md | `[?]` | -- |
-| S2 | flow-analysis.md | `[ ]` | -- |
-| S3 | stressor-catalog.md | `[ ]` | -- |
-| S4 | contagion-analysis.md | `[ ]` | -- |
-| S5 | residual-design.md | `[ ]` | -- |
-| S6 | empirical-test.md | `[ ]` | -- |
-| S7 | sad.md | `[ ]` | -- |
+| S1b | naive-architecture.md | `[x]` | 2026-07-10 |
+| S2 | flow-analysis.md | `[x]` | 2026-07-10 |
+| S3 | stressor-catalog.md | `[x]` | 2026-07-10 |
+| S4 | contagion-analysis.md | `[x]` | 2026-07-10 |
+| S5 | residual-design.md | `[x]` | 2026-07-11 |
+| S6 | empirical-test.md | `[x]` | 2026-07-11 |
+| S7 | sad.md | `[?]` | -- |
 | S8a | handoff/arch-X.Y.Z/ (staging; emit only -- never touches consumer) -- downstream, optional | `[ ]` | -- |
 | S8b | consumer landed (architecture/arch-X.Y.Z/ + .specify/ + plan-template wiring) -- gated by S8a `[x]` + explicit operator authorization | `[ ]` | -- |
 
@@ -68,30 +68,30 @@ flowchart TD
     %% =====================================================
     S1a["[x] S1a - business-discovery (Business View)<br/>IN: PRD/SRD or stakeholders<br/>OUT: business-view.md"]:::approved
 
-    S1b["[?] S1b - business-discovery (Naive Architecture)<br/>IN: business-view.md (approved)<br/>OUT: naive-architecture.md"]:::awaiting_review
+    S1b["[x] S1b - business-discovery (Naive Architecture)<br/>IN: business-view.md (approved)<br/>OUT: naive-architecture.md"]:::approved
 
-    S2["[ ] S2 - flow-analysis<br/>IN: naive-architecture.md<br/>OUT: flow-analysis.md"]:::pending
+    S2["[x] S2 - flow-analysis<br/>IN: naive-architecture.md<br/>OUT: flow-analysis.md"]:::approved
 
-    S3["[ ] S3 - stressor-analysis<br/>IN: flow-analysis.md<br/>OUT: stressor-catalog.md (typed)"]:::pending
+    S3["[x] S3 - stressor-analysis<br/>IN: flow-analysis.md<br/>OUT: stressor-catalog.md (typed)"]:::approved
 
-    S4["[ ] S4 - contagion-analysis<br/>IN: stressor-catalog.md<br/>OUT: contagion-analysis.md<br/>(matrix + topology + business + looping)"]:::pending
+    S4["[x] S4 - contagion-analysis<br/>IN: stressor-catalog.md<br/>OUT: contagion-analysis.md<br/>(matrix + topology + business + looping)"]:::approved
 
-    S5["[ ] S5 - residual-design<br/>IN: contagion-analysis.md<br/>OUT: residual-design.md<br/>(NFRs + Static IDesign + Use Cases + diagrams)"]:::pending
+    S5["[x] S5 - residual-design<br/>IN: contagion-analysis.md<br/>OUT: residual-design.md<br/>(NFRs + Static IDesign + Use Cases + diagrams)"]:::approved
 
-    S6["[ ] S6 - empirical-test<br/>IN: residual-design.md + fresh test stressors<br/>OUT: empirical-test.md (Ri value)"]:::pending
+    S6["[x] S6 - empirical-test<br/>IN: residual-design.md + fresh test stressors<br/>OUT: empirical-test.md (Ri value)"]:::approved
 
-    S7["[ ] S7 - sad-assembler<br/>IN: 6 approved fragments<br/>OUT: sad.md (final integrated SAD)"]:::pending
+    S7["[?] S7 - sad-assembler<br/>IN: 6 approved fragments<br/>OUT: sad.md (final integrated SAD)"]:::awaiting_review
 
     %% =====================================================
     %% APPROVAL GATES (between sub-skills)
     %% =====================================================
     G1a{"[x] Gate 1a<br/>Business View approved?"}:::approved
-    G1b{"[ ] Gate 1b<br/>Naive Arch approved?"}:::pending
-    G2{"[ ] Gate 2<br/>Fragment approved?"}:::pending
-    G3{"[ ] Gate 3<br/>Fragment approved?"}:::pending
-    G4{"[ ] Gate 4<br/>Fragment approved?"}:::pending
-    G5{"[ ] Gate 5<br/>Fragment approved?"}:::pending
-    G6{"[ ] Gate 6<br/>Ri > 0 AND<br/>unstressed surfaces<br/>declared?"}:::pending
+    G1b{"[x] Gate 1b<br/>Naive Arch approved?"}:::approved
+    G2{"[x] Gate 2<br/>Fragment approved?"}:::approved
+    G3{"[x] Gate 3<br/>Fragment approved?"}:::approved
+    G4{"[x] Gate 4<br/>Fragment approved?"}:::approved
+    G5{"[x] Gate 5<br/>Fragment approved?"}:::approved
+    G6{"[x] Gate 6<br/>Ri > 0 AND<br/>unstressed surfaces<br/>declared?"}:::approved
     G7{"[ ] Gate 7<br/>SAD passes auditor?"}:::pending
 
     %% =====================================================
@@ -175,3 +175,15 @@ flowchart TD
 | 2026-07-10 | R-27 resolution pass 2: OQ-6 Resolved (3-5 s bound extends to alert delivery), OQ-5/OQ-7 Closed by operator decision; DV-2 extended, DV-12 added; no OQ gates S1a |
 | 2026-07-10 | Operator approved S1a (UI mutation); cursor advanced to S1b; S1b started -- Architect subagent producing naive-architecture.md |
 | 2026-07-10 | S1b fragment emitted (naive-architecture.md: 19 components -- 3 Clients / 4 Managers / 3 Engines / 7 ResourceAccess / 2 Resources; R-05/R-06 pass, check_fragment.py OK); parked at gate `[?]` awaiting operator review |
+| 2026-07-10 | Operator approved S1b (UI mutation); cursor advanced to S2; S2 started -- Architect subagent producing flow-analysis.md |
+| 2026-07-10 | S2 fragment emitted (flow-analysis.md: 62 flows F1-F62, all triggers declared; 7 coverage notes incl. UC-05 manual assignment gap + temporal drivers without owners; check_fragment.py OK); parked at gate `[?]` awaiting operator review |
+| 2026-07-10 | Operator approved S2 (UI mutation); cursor advanced to S3; S3 started -- Architect subagent producing stressor-catalog.md |
+| 2026-07-10 | S3 fragment emitted (stressor-catalog.md: 69 stressors -- 51 Structural / 7 Topological / 7 Business / 4 Combined; all DV seeds dispositioned, DV-10 partially routed to PRD; ridiculous stressors #5/#7/#9; check_fragment.py + check_counts.py OK); parked at gate `[?]` awaiting operator review |
+| 2026-07-10 | Operator approved S3 (UI mutation); cursor advanced to S4; S4 started -- Architect subagent producing contagion-analysis.md |
+| 2026-07-10 | S4 fragment emitted (contagion-analysis.md: 53x23 matrix, N=76 K=199 P=low; 9 Decouple + 44 Document-NFR closures; 7 topology rows; 7 business decisions; looping #66-#69 with R-17 traces; R-25 grouping = 5 services incl. CareConsultManager promotion; no S3 backtrack; check_counts.py + check_fragment.py OK); parked at gate `[?]` awaiting operator review |
+| 2026-07-10 | Operator approved S4 (UI mutation); cursor advanced to S5; S5 started -- Architect subagent producing residual-design.md |
+| 2026-07-11 | S5 fragment emitted (residual-design.md: 58 NFRs all sourced; 28 components applying exactly the 9 Decouple closures; 21 UCs seeded verbatim-in-meaning with Residue Mapping; 10 deployables / 7 boundaries traced to topology rows; no S4 backtrack). Producer subagent hit a session limit after writing the full fragment; parent verified completeness -- check_fragment.py + check_counts.py OK. Parked at gate `[?]` awaiting operator review |
+| 2026-07-11 | Operator approved S5 (UI mutation); cursor advanced to S6; S6 started -- Architect subagent producing empirical-test.md |
+| 2026-07-11 | S6 fragment emitted (empirical-test.md: 16 fresh test stressors T1-T16 disjoint from S3; Ri = (11-2)/16 = 0.56 > 0; invariants I1-I7 preserved; 5 unstressed surfaces declared as next-round seeds; check_counts.py + check_fragment.py OK); parked at gate `[?]` awaiting operator review |
+| 2026-07-11 | Operator approved S6 (UI mutation); Gate 6 satisfied (Ri > 0, unstressed surfaces declared); cursor advanced to S7; S7 started -- Architect subagent assembling sad.md |
+| 2026-07-11 | S7 assembled (docs/sad/sad.md, 3048 lines, v1.0 iteration 1, Ri 0.56; fragments inlined byte-verbatim; all cross-references resolve; 5 fragment inconsistencies reported not fixed; check_fragment.py PASS, check_counts.py 1 known regex false positive -- genuine aggregates verified independently). Parked at gate `[?]` awaiting operator review / Gate 7 auditor pass |
