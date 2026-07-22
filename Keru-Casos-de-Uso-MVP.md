@@ -125,7 +125,7 @@ flowchart LR
 - **Descripción:** Alta del perfil profesional del cuidador. La cuenta nueva queda **pendiente de verificación** y no es visible en el marketplace hasta que el administrador la apruebe (UC-19).
 - **Precondiciones:** Ninguna.
 - **Flujo principal:**
-  1. El cuidador crea su cuenta e ingresa datos personales.
+  1. El cuidador crea su cuenta e ingresa datos personales, **incluida una foto de perfil opcional** (se muestra en las cards de búsqueda, UC-06).
   2. Selecciona sus especialidades: cuidado de adultos mayores, post-quirúrgico, enfermedad crónica, discapacidad, paliativos, pediátrico, rehabilitación, acompañamiento.
   3. Carga sus estudios y certificaciones (título de enfermería, auxiliar, RCP, cuidado geriátrico, etc.), cada una con institución y año.
   4. Define su disponibilidad horaria.
@@ -151,7 +151,7 @@ flowchart LR
 - **Precondiciones:** Existe la ficha del paciente (UC-01).
 - **Flujo principal:**
   1. El paciente o un familiar ya vinculado genera un código/link de invitación desde la ficha del paciente.
-  2. Comparte el link por WhatsApp, mail u otro canal.
+  2. Comparte el link por WhatsApp, mail u otro canal. **Además, el sistema envía automáticamente el link por email al invitado nombrado** (mejor esfuerzo: si el envío falla, la invitación sigue siendo válida y compartible a mano).
   3. El invitado abre el link: si tiene la app instalada se abre en la app; si no, el link lo lleva a la **web de Keru**.
   4. La pantalla muestra la invitación a vincularse con el paciente y pide confirmación.
   5. El invitado presiona "Sí, confirmo".
@@ -163,6 +163,7 @@ flowchart LR
 - **Postcondiciones:** El familiar queda vinculado al paciente: puede buscar/contratar cuidadores para él, consultar su estado y cargar datos clínicos.
 - **Criterios de aceptación:**
   - [ ] El código/link de invitación es único y está asociado a un paciente concreto.
+  - [ ] El sistema envía el link por email al invitado (mejor esfuerzo, no bloquea la emisión); la UI ofrece igualmente copiar/compartir el link.
   - [ ] El link funciona como deep link: abre la app si está instalada y la web si no (misma confirmación en ambos casos).
   - [ ] Si el invitado no está registrado, tras crear su usuario el vínculo se establece sin pasos adicionales.
   - [ ] Un paciente puede tener uno o más familiares vinculados.
@@ -315,15 +316,17 @@ flowchart LR
 - **Descripción:** El cuidador recibe la solicitud, evalúa el detalle (incluida la reputación del paciente) y la acepta o rechaza. La aceptación activa el servicio.
 - **Precondiciones:** Solicitud pendiente (UC-09).
 - **Flujo principal:**
-  1. El cuidador ve el detalle de la solicitud (paciente, modalidad, fechas, requerimientos) junto con la **reputación del paciente** (reseñas de otros cuidadores, UC-21).
+  1. El cuidador ve el detalle de la solicitud (paciente —con su nombre—, modalidad, fechas, requerimientos) junto con la **reputación del paciente** (reseñas de otros cuidadores, UC-21).
   2. Acepta la solicitud.
   3. El sistema notifica al solicitante y crea la asignación cuidador–paciente (UC-05) para el período contratado.
+  4. Aceptada la solicitud, el cuidador accede a los **datos de contacto** del solicitante para coordinar el servicio.
 - **Flujos alternativos / excepciones:**
   - A1. El cuidador rechaza: la solicitud queda rechazada y se notifica al solicitante.
 - **Postcondiciones:** Solicitud aceptada (asignación creada) o rechazada.
 - **Criterios de aceptación:**
   - [ ] El solicitante ve el estado actualizado de su solicitud (y recibe la notificación del cambio).
   - [ ] Solo las solicitudes aceptadas generan asignación y habilitan el registro de datos del paciente.
+  - [ ] Los **datos de contacto** del solicitante solo son visibles para el cuidador con la solicitud **aceptada o en curso** (antes de aceptar ve paciente, fechas, modalidad y requerimientos, no el contacto).
   - [ ] *(Si se incluye pagos, el pago se insertará entre la aceptación y la activación de la asignación.)*
 
 ---
