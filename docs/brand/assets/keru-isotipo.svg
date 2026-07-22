@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Keru">
+  <title>Keru — isotipo</title>
+  <!-- La "k" de keru: el trazo violeta es quien cuida (sostiene), el punto cálido
+       es la persona cuidada. Construcción monolínea, terminales redondeadas. -->
+  <g fill="none" stroke="#5D3492" stroke-width="9" stroke-linecap="round">
+    <path d="M20 13v37"/>
+    <path d="M25.5 35 42.5 50"/>
+  </g>
+  <circle cx="44.5" cy="19.5" r="7.5" fill="#D96A3D"/>
+</svg>
