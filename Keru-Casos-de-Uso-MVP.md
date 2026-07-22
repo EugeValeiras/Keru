@@ -218,6 +218,7 @@ flowchart LR
   1. El titular ve la lista de sus perfiles de paciente.
   2. Agrega un nuevo perfil (UC-01), edita uno existente o lo selecciona como contexto activo.
   3. El sistema muestra un selector de perfil visible en las secciones por-paciente (búsqueda, contrataciones, seguimiento).
+  4. Desde la ficha del paciente, abre el **círculo**: la lista de cuentas vinculadas al paciente (nombre y email) con el **rol de su vínculo** (`consent-holder` / `manager` / `viewer`).
 - **Flujos alternativos / excepciones:**
   - A1. El titular es también paciente: puede tener su propio perfil ("yo") junto a los de otras personas.
 - **Postcondiciones:** Perfiles disponibles como contexto para el resto de los casos de uso.
@@ -226,6 +227,7 @@ flowchart LR
   - [ ] Cada contratación, registro clínico, invitación y reseña queda asociado a **un perfil concreto**, nunca a la cuenta en general.
   - [ ] Cambiar de perfil cambia el contexto de búsqueda, contrataciones y seguimiento sin cerrar sesión.
   - [ ] Cualquier vinculado puede **ver la ficha completa** del paciente (datos de UC-01); la **edición** de la ficha queda reservada a los vínculos `consent-holder` y `manager` (un `viewer` solo lee).
+  - [ ] Cualquier vinculado (cualquier rol) puede **ver el círculo** del paciente: por cada cuenta vinculada muestra **nombre visible, email y rol del vínculo**. Quien **no** está vinculado al paciente recibe **403** (no ve ni la existencia del círculo).
   - [ ] Toda edición de la ficha queda **auditada** (quién, cuándo, qué campos) — principio de trazabilidad (constitution §2.3).
 
 ---
