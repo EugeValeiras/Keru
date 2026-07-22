@@ -159,6 +159,7 @@ Registradas para no olvidarlas; ninguna bloquea el MVP (los contratos están par
 - **UC-09:** modelo de período de servicio (fijo / recurrente / open-ended) — decisión de producto; el residual usa transiciones timer-driven.
 - **DV-12:** qué es una "zona" fuera de CABA — no definido; aislado dentro de `ZoneAccess`.
 - **UC-17:** ¿segunda reseña sobre el mismo servicio edita o se prohíbe? El residual la hace inmutable (una sola vez).
+- **UC-02 A3:** cambio de **credenciales** (certificaciones/especialidades/nombre) de un cuidador **aprobado** — ¿dispara re-verificación, y de qué tipo (solo la credencial nueva o todo el perfil)? Hasta decidirlo, un perfil aprobado no puede editarlas; solo edita foto, disponibilidad, tarifas (efectivo-fechadas), zona y modalidades.
 
 ---
 
