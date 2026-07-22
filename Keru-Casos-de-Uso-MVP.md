@@ -119,10 +119,10 @@ flowchart LR
 
 ---
 
-#### UC-02 · Registrar cuidador
+#### UC-02 · Registrar cuidador (y mantener el perfil aprobado)
 - **Actor principal:** Cuidador
 - **Referencia al scope:** §3.1, §3.2 + decisión de producto (aprobación previa del admin)
-- **Descripción:** Alta del perfil profesional del cuidador. La cuenta nueva queda **pendiente de verificación** y no es visible en el marketplace hasta que el administrador la apruebe (UC-19).
+- **Descripción:** Alta del perfil profesional del cuidador. La cuenta nueva queda **pendiente de verificación** y no es visible en el marketplace hasta que el administrador la apruebe (UC-19). Una vez aprobado, el cuidador **mantiene su perfil al día** (foto, disponibilidad, tarifas, zona, modalidades) sin volver a pasar por aprobación (A3).
 - **Precondiciones:** Ninguna.
 - **Flujo principal:**
   1. El cuidador crea su cuenta e ingresa datos personales, **incluida una foto de perfil opcional** (se muestra en las cards de búsqueda, UC-06).
@@ -135,6 +135,7 @@ flowchart LR
 - **Flujos alternativos / excepciones:**
   - A1. Certificaciones sin institución o año: el sistema exige completar ambos campos.
   - A2. **Re-postulación tras rechazo:** un cuidador con perfil **rechazado** puede corregir sus datos y re-enviar la postulación; el perfil vuelve a estado **pendiente**, se limpia el motivo de rechazo, las certificaciones vuelven a "no verificada" y entra de nuevo a la cola de revisión del administrador (UC-19).
+  - A3. **Edición del perfil aprobado (NFR-03/23):** un cuidador **aprobado** actualiza **foto, disponibilidad, tarifas, zona y modalidades** sin pasar por re-aprobación: el perfil sigue aprobado y visible en el marketplace durante y después del cambio. Las tarifas son **efectivo-fechadas**: cada cambio agrega una nueva versión con su fecha de vigencia al historial de tarifas — **ninguna versión pasada se reescribe**. El marketplace (UC-06/07) muestra la tarifa **vigente**; las solicitudes ya emitidas conservan la tarifa **pinneada** al momento de solicitar (UC-09, NFR-03/23) y la aceptación se evalúa contra esos términos. **Nombre, especialidades y certificaciones no se editan por esta vía**: son parte de lo revisado al aprobar (UC-19); un cambio de credenciales exige re-verificación, cuyo proceso es una **decisión de producto pendiente** (constitution §7) — hasta que se decida, el cuidador aprobado no puede modificarlos. Toda edición queda auditada (quién, cuándo, qué campos).
 - **Postcondiciones:** Perfil creado en estado pendiente; recién al ser aprobado por el administrador (UC-19) aparece en los resultados de búsqueda (UC-06) y puede recibir solicitudes (UC-09).
 - **Criterios de aceptación:**
   - [ ] El perfil registra especialidades, certificaciones (con institución y año), disponibilidad horaria, tarifas, zona y modalidad.
@@ -142,6 +143,9 @@ flowchart LR
   - [ ] El cuidador puede ver el estado de su cuenta (pendiente / aprobada / rechazada).
   - [ ] Las certificaciones nacen en estado "no verificada" hasta que el proceso interno las verifique (UC-19).
   - [ ] La re-postulación solo es posible desde el estado **rechazado** (un perfil aprobado o desactivado no se re-envía por esta vía); cada re-envío queda auditado.
+  - [ ] Un cuidador **aprobado** edita foto, disponibilidad, tarifas, zona y modalidades **sin re-aprobación** (el perfil sigue aprobado y visible); la edición solo está disponible para el dueño del perfil y solo en estado aprobado (pendiente/rechazado usan el alta o la re-postulación A2).
+  - [ ] La tarifa es **efectivo-fechada** (NFR-03/23): cada cambio agrega una versión al historial con su fecha de vigencia; ninguna versión pasada se reescribe, y las solicitudes existentes conservan la tarifa pinneada al crearlas mientras el marketplace muestra la vigente.
+  - [ ] Nombre, especialidades y certificaciones **no** son editables con el perfil aprobado (el cambio de credenciales requiere re-verificación — decisión de producto pendiente, constitution §7); toda edición queda auditada.
 
 ---
 
@@ -594,7 +598,7 @@ flowchart LR
 | **Paciente (perfil)** | nombre, edad, fecha de nacimiento, foto, condición principal, grupo sanguíneo, alergias, contacto de emergencia, reputación (reseñas de cuidadores) | pertenece a una Cuenta titular; 1..n Familiares; 0..n Asignaciones (vigentes e históricas); 0..n Reseñas recibidas |
 | **Familiar** | datos personales | n..n Pacientes (vínculo con permiso de lectura y carga, creado por invitación) |
 | **InvitaciónFamiliar** | código/link único, paciente, emisor, estado (pendiente / aceptada / vencida), fecha | Paciente → Familiar invitado |
-| **Cuidador** | **estado de cuenta (pendiente / aprobada / rechazada)**, especialidades, experiencia, disponibilidad horaria, tarifas/planes, zona, modalidades | 1..n Certificaciones; 0..n Insignias; 0..n Reseñas recibidas |
+| **Cuidador** | **estado de cuenta (pendiente / aprobada / rechazada)**, especialidades, experiencia, disponibilidad horaria, tarifas/planes (**efectivo-fechadas**: la vigente + historial de versiones con fecha de vigencia, UC-02 A3), zona, modalidades | 1..n Certificaciones; 0..n Insignias; 0..n Reseñas recibidas; 0..n VersionesDeTarifa |
 | **Certificación** | tipo (enfermería, auxiliar, RCP, geriátrico…), institución, año, estado de verificación | pertenece a Cuidador |
 | **InsigniaVerificación** | nivel: certificaciones verificadas / identidad validada / antecedentes | pertenece a Cuidador |
 | **Favorito** | — | Usuario ↔ Cuidador |
