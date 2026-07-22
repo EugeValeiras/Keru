@@ -1,13 +1,16 @@
 import { Module } from '@nestjs/common';
+import { MembershipModule } from '@keru/membership';
 import { HiringModule } from '@keru/hiring';
 import { ReputationModule } from '@keru/reputation';
 import { SchedulerService } from './scheduler.service';
 import { OpsController } from './ops.controller';
+import { AuditController } from './audit.controller';
+import { DashboardController } from './dashboard.controller';
 
-/** Ops: barrido de vencidos (cron + trigger manual admin). NFR-14. */
+/** Ops: barrido de vencidos, auditoría y dashboard operativo del back-office. NFR-14/33/55. */
 @Module({
-  imports: [HiringModule, ReputationModule],
+  imports: [MembershipModule, HiringModule, ReputationModule],
   providers: [SchedulerService],
-  controllers: [OpsController],
+  controllers: [OpsController, AuditController, DashboardController],
 })
 export class OpsModule {}

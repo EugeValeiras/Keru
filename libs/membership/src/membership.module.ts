@@ -31,6 +31,6 @@ import { InvitationController } from './invitation.controller';
     InvitationController,
   ],
   providers: [AccountAccess, CaregiverAccess, MembershipManager],
-  exports: [AccountAccess, CaregiverAccess],
+  exports: [AccountAccess, CaregiverAccess, MembershipManager],
 })
 export class MembershipModule {}

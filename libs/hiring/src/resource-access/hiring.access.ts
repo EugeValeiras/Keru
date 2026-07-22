@@ -83,6 +83,21 @@ export class HiringAccess {
     return this.assignments.find({ where: { patientId }, order: { createdAt: 'DESC' } });
   }
 
+  // --- Métricas (dashboard) ---
+  async countRequestsByStatus(): Promise<Record<string, number>> {
+    const rows = await this.requests
+      .createQueryBuilder('r')
+      .select('r.status', 'status')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('r.status')
+      .getRawMany<{ status: string; count: string }>();
+    return Object.fromEntries(rows.map((r) => [r.status, Number(r.count)]));
+  }
+
+  countActiveAssignments(): Promise<number> {
+    return this.assignments.count({ where: { status: 'active' } });
+  }
+
   /** Cierre del servicio (UC-09/OQ-1): las asignaciones de la solicitud pasan a históricas. */
   async setAssignmentsHistoricalForRequest(requestId: string, manager?: EntityManager): Promise<void> {
     const repo = manager ? manager.getRepository(Assignment) : this.assignments;
@@ -102,6 +117,34 @@ export class HiringAccess {
       .returning('*')
       .execute();
     return result.raw as Assignment[];
+  }
+
+  // --- Ripple de desactivación de cuidador (NFR-31) ---
+
+  /** Cierra las asignaciones activas del cuidador -> historical. Devuelve las cerradas. */
+  async closeActiveAssignmentsForCaregiver(caregiverId: string): Promise<Assignment[]> {
+    const result = await this.assignments
+      .createQueryBuilder()
+      .update(Assignment)
+      .set({ status: 'historical' })
+      .where('"caregiverId" = :caregiverId', { caregiverId })
+      .andWhere('status = :active', { active: 'active' })
+      .returning('*')
+      .execute();
+    return result.raw as Assignment[];
+  }
+
+  /** Cancela (declined) las solicitudes pendientes del cuidador. Devuelve las canceladas. */
+  async declinePendingRequestsForCaregiver(caregiverId: string, now: Date): Promise<HiringRequest[]> {
+    const result = await this.requests
+      .createQueryBuilder()
+      .update(HiringRequest)
+      .set({ status: 'declined', decidedAt: now })
+      .where('"caregiverId" = :caregiverId', { caregiverId })
+      .andWhere('status = :pending', { pending: 'pending' })
+      .returning('*')
+      .execute();
+    return result.raw as HiringRequest[];
   }
 
   /** Solicitudes pendientes vencidas: pending + startDate < now -> expired. Devuelve las reclamadas. */

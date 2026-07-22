@@ -3,6 +3,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { CoreModule } from '@keru/core';
 import { AuthorizationModule } from './authorization/authorization.module';
 import { OpsModule } from './ops/ops.module';
+import { WorkerModule } from './worker/worker.module';
 import { MembershipModule } from '@keru/membership';
 import { HiringModule } from '@keru/hiring';
 import { CareRecordModule } from '@keru/care-record';
@@ -27,6 +28,7 @@ import { ReferenceModule } from './reference/reference.module';
     ReputationModule,
     ReferenceModule,
     OpsModule,
+    WorkerModule,
   ],
 })
 export class AppModule {}

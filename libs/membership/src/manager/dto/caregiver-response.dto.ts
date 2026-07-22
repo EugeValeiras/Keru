@@ -13,7 +13,7 @@ export class CaregiverResponseDto {
   @ApiProperty()
   displayName!: string;
 
-  @ApiProperty({ enum: ['pending', 'approved', 'rejected'] })
+  @ApiProperty({ enum: ['pending', 'approved', 'rejected', 'deactivated'] })
   status!: CaregiverStatus;
 
   @ApiProperty({ type: [String] })

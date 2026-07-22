@@ -9,7 +9,15 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { randomBytes } from 'node:crypto';
 import * as bcrypt from 'bcryptjs';
-import { Manager, AuditUtility, LinkRole, TransactionUtility, JwtPayload } from '@keru/core';
+import {
+  Manager,
+  AuditUtility,
+  LinkRole,
+  TransactionUtility,
+  JwtPayload,
+  PubSubUtility,
+  DomainEventType,
+} from '@keru/core';
 import { AccountAccess } from '../resource-access/account.access';
 import { CaregiverAccess } from '../resource-access/caregiver.access';
 import { Patient } from '../resource-access/entities/patient.entity';
@@ -50,6 +58,7 @@ export class MembershipManager {
     private readonly accountAccess: AccountAccess,
     private readonly caregiverAccess: CaregiverAccess,
     private readonly jwt: JwtService,
+    private readonly pubsub: PubSubUtility,
     private readonly audit: AuditUtility,
   ) {}
 
@@ -186,6 +195,29 @@ export class MembershipManager {
     return this.caregiverAccess.listByStatus('pending');
   }
 
+  /** Detalle completo de un cuidador (back-office). */
+  getCaregiverById(id: string): Promise<Caregiver> {
+    return this.requireCaregiver(id);
+  }
+
+  /** Listado paginado con filtro por estado y búsqueda (back-office). */
+  async listCaregivers(
+    status: Caregiver['status'] | undefined,
+    q: string | undefined,
+    page: number,
+    pageSize: number,
+  ): Promise<{ items: Caregiver[]; total: number; page: number; pageSize: number }> {
+    const take = Math.min(Math.max(pageSize, 1), 100);
+    const safePage = Math.max(page, 1);
+    const [items, total] = await this.caregiverAccess.listPaged(status, q, (safePage - 1) * take, take);
+    return { items, total, page: safePage, pageSize: take };
+  }
+
+  /** Métricas de cuidadores por estado (dashboard). */
+  caregiverCountsByStatus(): Promise<Record<string, number>> {
+    return this.caregiverAccess.countByStatus();
+  }
+
   async approveCaregiver(caregiverId: string, adminId: string): Promise<Caregiver> {
     const caregiver = await this.requireCaregiver(caregiverId);
     await this.caregiverAccess.setStatus(caregiver.id, 'approved', adminId, null, new Date());
@@ -227,6 +259,50 @@ export class MembershipManager {
       actor: adminId,
       target: { type: 'caregiver', id: caregiver.id },
       metadata: { badges },
+    });
+    return this.requireCaregiver(caregiverId);
+  }
+
+  /** OQ-8/NFR-31 · Desactivar (ocultar) cuidador y disparar el ripple encolado a Hiring. */
+  async deactivateCaregiver(caregiverId: string, adminId: string, reason?: string): Promise<Caregiver> {
+    const caregiver = await this.requireCaregiver(caregiverId);
+    if (caregiver.status === 'deactivated') {
+      throw new BadRequestException('El cuidador ya está desactivado');
+    }
+
+    // Atómico: estado + evento outbox se escriben en la misma transacción (Decouple row 35).
+    const event = await this.tx.run(async (em) => {
+      await this.caregiverAccess.setStatus(caregiverId, 'deactivated', adminId, reason ?? null, new Date(), em);
+      await this.audit.record({
+        action: 'membership.caregiver.deactivated',
+        actor: adminId,
+        target: { type: 'caregiver', id: caregiverId },
+        metadata: { reason },
+        manager: em,
+      });
+      return this.pubsub.publish({
+        manager: em,
+        type: DomainEventType.CaregiverDeactivated,
+        payload: { caregiverId },
+      });
+    });
+    // Tras el commit, se encola para que el worker lo despache a HiringManager (Manager→Manager encolado).
+    await this.pubsub.enqueue(event);
+
+    return this.requireCaregiver(caregiverId);
+  }
+
+  /** Reactivar un cuidador desactivado (vuelve a estado aprobado y visible). */
+  async reactivateCaregiver(caregiverId: string, adminId: string): Promise<Caregiver> {
+    const caregiver = await this.requireCaregiver(caregiverId);
+    if (caregiver.status !== 'deactivated') {
+      throw new BadRequestException('Solo se puede reactivar un cuidador desactivado');
+    }
+    await this.caregiverAccess.setStatus(caregiverId, 'approved', adminId, null, new Date());
+    await this.audit.record({
+      action: 'membership.caregiver.reactivated',
+      actor: adminId,
+      target: { type: 'caregiver', id: caregiverId },
     });
     return this.requireCaregiver(caregiverId);
   }

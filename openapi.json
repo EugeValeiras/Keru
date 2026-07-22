@@ -226,6 +226,102 @@
         ]
       }
     },
+    "/api/v1/admin/caregivers": {
+      "get": {
+        "operationId": "AdminCaregiverController_list_v1",
+        "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "pending",
+                "approved",
+                "rejected",
+                "deactivated"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "Busca por nombre o zona",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Listar cuidadores con filtro por estado (paginado)",
+        "tags": [
+          "Back-office"
+        ]
+      }
+    },
+    "/api/v1/admin/caregivers/{id}": {
+      "get": {
+        "operationId": "AdminCaregiverController_detail_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaregiverDetailDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "UC-19 · Detalle del cuidador (con documentación para verificar)",
+        "tags": [
+          "Back-office"
+        ]
+      }
+    },
     "/api/v1/admin/caregivers/{id}/approve": {
       "post": {
         "operationId": "AdminCaregiverController_approve_v1",
@@ -349,6 +445,88 @@
           }
         ],
         "summary": "UC-19 · Actualizar insignias de verificación (niveles independientes)",
+        "tags": [
+          "Back-office"
+        ]
+      }
+    },
+    "/api/v1/admin/caregivers/{id}/deactivate": {
+      "post": {
+        "operationId": "AdminCaregiverController_deactivate_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeactivateCaregiverDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaregiverResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "OQ-8/NFR-31 · Desactivar (ocultar) cuidador; dispara el ripple encolado a Hiring",
+        "tags": [
+          "Back-office"
+        ]
+      }
+    },
+    "/api/v1/admin/caregivers/{id}/reactivate": {
+      "post": {
+        "operationId": "AdminCaregiverController_reactivate_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaregiverResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "OQ-8 · Reactivar cuidador desactivado (vuelve a visible)",
         "tags": [
           "Back-office"
         ]
@@ -1446,6 +1624,79 @@
           "Ops"
         ]
       }
+    },
+    "/api/v1/admin/audit": {
+      "get": {
+        "operationId": "AuditController_list_v1",
+        "parameters": [
+          {
+            "name": "actor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "action",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Página de entradas de auditoría"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "NFR-33 · Listar el audit log (paginado, filtros por actor/acción)",
+        "tags": [
+          "Ops"
+        ]
+      }
+    },
+    "/api/v1/admin/dashboard": {
+      "get": {
+        "operationId": "DashboardController_get_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Métricas del back-office"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Métricas operativas (cuidadores por estado, contrataciones, asignaciones activas)",
+        "tags": [
+          "Ops"
+        ]
+      }
     }
   },
   "info": {
@@ -1812,7 +2063,8 @@
             "enum": [
               "pending",
               "approved",
-              "rejected"
+              "rejected",
+              "deactivated"
             ]
           },
           "specialties": {
@@ -1852,6 +2104,90 @@
           "badges"
         ]
       },
+      "CaregiverDetailDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "accountId": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "approved",
+              "rejected",
+              "deactivated"
+            ]
+          },
+          "specialties": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "certifications": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "availability": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "rates": {
+            "type": "object"
+          },
+          "zone": {
+            "type": "string"
+          },
+          "modalities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "badges": {
+            "type": "object"
+          },
+          "rejectionReason": {
+            "type": "object"
+          },
+          "reviewedBy": {
+            "type": "object"
+          },
+          "reviewedAt": {
+            "type": "object"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "accountId",
+          "displayName",
+          "status",
+          "specialties",
+          "certifications",
+          "availability",
+          "rates",
+          "zone",
+          "modalities",
+          "badges",
+          "createdAt"
+        ]
+      },
       "RejectCaregiverDto": {
         "type": "object",
         "properties": {
@@ -1878,6 +2214,15 @@
           "background": {
             "type": "boolean",
             "example": false
+          }
+        }
+      },
+      "DeactivateCaregiverDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "example": "Denuncia de un familiar"
           }
         }
       },

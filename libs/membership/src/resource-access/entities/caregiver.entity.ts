@@ -1,6 +1,6 @@
 import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
 
-export type CaregiverStatus = 'pending' | 'approved' | 'rejected';
+export type CaregiverStatus = 'pending' | 'approved' | 'rejected' | 'deactivated';
 
 export interface Certification {
   type: string;

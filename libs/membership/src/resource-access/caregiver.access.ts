@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 import { ResourceAccess } from '@keru/core';
 import {
   AvailabilitySlot,
@@ -59,6 +59,34 @@ export class CaregiverAccess {
     return this.caregivers.find({ where: { status }, order: { createdAt: 'ASC' } });
   }
 
+  /** Listado paginado con filtro por estado y búsqueda por nombre/zona (back-office). */
+  listPaged(
+    status: CaregiverStatus | undefined,
+    q: string | undefined,
+    skip: number,
+    take: number,
+  ): Promise<[Caregiver[], number]> {
+    const qb = this.caregivers
+      .createQueryBuilder('c')
+      .orderBy('c.createdAt', 'DESC')
+      .skip(skip)
+      .take(take);
+    if (status) qb.andWhere('c.status = :status', { status });
+    if (q) qb.andWhere('(c."displayName" ILIKE :q OR c.zone ILIKE :q)', { q: `%${q}%` });
+    return qb.getManyAndCount();
+  }
+
+  /** Conteo de cuidadores por estado (dashboard). */
+  async countByStatus(): Promise<Record<string, number>> {
+    const rows = await this.caregivers
+      .createQueryBuilder('c')
+      .select('c.status', 'status')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('c.status')
+      .getRawMany<{ status: string; count: string }>();
+    return Object.fromEntries(rows.map((r) => [r.status, Number(r.count)]));
+  }
+
   /** UC-19. Transición de estado con provenance (quién/cuándo). */
   async setStatus(
     id: string,
@@ -66,8 +94,10 @@ export class CaregiverAccess {
     reviewedBy: string,
     rejectionReason: string | null,
     reviewedAt: Date,
+    manager?: EntityManager,
   ): Promise<void> {
-    await this.caregivers.update(id, { status, reviewedBy, reviewedAt, rejectionReason });
+    const repo = manager ? manager.getRepository(Caregiver) : this.caregivers;
+    await repo.update(id, { status, reviewedBy, reviewedAt, rejectionReason });
   }
 
   /** UC-19. Actualiza las insignias de verificación (los tres niveles son independientes). */

@@ -197,6 +197,30 @@ export class HiringManager {
     );
   }
 
+  // --- NFR-31 · Ripple de desactivación (lo dispara el worker del outbox, NO Membership directo) ---
+  /** Un cuidador fue desactivado: cerrar sus asignaciones activas y cancelar sus solicitudes pendientes. */
+  async handleCaregiverDeactivated(caregiverId: string): Promise<{ assignmentsClosed: number; requestsCancelled: number }> {
+    const assignments = await this.hiringAccess.closeActiveAssignmentsForCaregiver(caregiverId);
+    const requests = await this.hiringAccess.declinePendingRequestsForCaregiver(caregiverId, new Date());
+    for (const a of assignments) {
+      await this.audit.record({
+        action: 'hiring.assignment.closed-by-deactivation',
+        actor: 'system',
+        target: { type: 'assignment', id: a.id },
+        metadata: { caregiverId },
+      });
+    }
+    for (const r of requests) {
+      await this.audit.record({
+        action: 'hiring.request.cancelled-by-deactivation',
+        actor: 'system',
+        target: { type: 'hiring_request', id: r.id },
+        metadata: { caregiverId },
+      });
+    }
+    return { assignmentsClosed: assignments.length, requestsCancelled: requests.length };
+  }
+
   // --- NFR-14 · Barrido de vencidos (llamado por el scheduler o el endpoint de ops) ---
   /** Finaliza asignaciones vencidas y expira solicitudes pendientes vencidas. Idempotente. */
   async sweepLifecycle(now = new Date()): Promise<{ assignmentsClosed: number; requestsExpired: number }> {
@@ -218,6 +242,15 @@ export class HiringManager {
       });
     }
     return { assignmentsClosed: assignments.length, requestsExpired: requests.length };
+  }
+
+  /** Métricas de contratación para el dashboard del back-office. */
+  async dashboardMetrics(): Promise<{ requests: Record<string, number>; activeAssignments: number }> {
+    const [requests, activeAssignments] = await Promise.all([
+      this.hiringAccess.countRequestsByStatus(),
+      this.hiringAccess.countActiveAssignments(),
+    ]);
+    return { requests, activeAssignments };
   }
 
   // --- helpers ---

@@ -1,7 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
+import { InjectRepository } from '@nestjs/typeorm';
 import { Queue } from 'bullmq';
-import { EntityManager } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 import { OutboxEvent } from './outbox-event.entity';
 import { DomainEventType, OUTBOX_QUEUE } from './outbox.constants';
 
@@ -22,7 +23,10 @@ export interface PublishOptions {
 export class PubSubUtility {
   private readonly logger = new Logger(PubSubUtility.name);
 
-  constructor(@InjectQueue(OUTBOX_QUEUE) private readonly queue: Queue) {}
+  constructor(
+    @InjectQueue(OUTBOX_QUEUE) private readonly queue: Queue,
+    @InjectRepository(OutboxEvent) private readonly outbox: Repository<OutboxEvent>,
+  ) {}
 
   /** Persiste el evento en el outbox usando el EntityManager de la transacción activa. */
   async publish(opts: PublishOptions): Promise<OutboxEvent> {
@@ -38,8 +42,18 @@ export class PubSubUtility {
     return saved;
   }
 
-  /** Encola el evento ya persistido para su dispatch. Llamado por el relay tras el commit. */
+  /** Encola el evento ya persistido para su dispatch. Llamado tras el commit de la transacción. */
   async enqueue(event: OutboxEvent): Promise<void> {
     await this.queue.add(event.type, { outboxEventId: event.id }, { jobId: event.id });
+  }
+
+  /** Lee un evento del outbox (usado por el worker que consume la cola). */
+  findEvent(id: string): Promise<OutboxEvent | null> {
+    return this.outbox.findOne({ where: { id } });
+  }
+
+  /** Marca el evento como despachado (idempotencia del worker). */
+  async markDispatched(id: string): Promise<void> {
+    await this.outbox.update(id, { dispatched: true, dispatchedAt: new Date() });
   }
 }

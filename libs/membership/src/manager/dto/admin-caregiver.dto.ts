@@ -10,6 +10,15 @@ export class RejectCaregiverDto {
   reason!: string;
 }
 
+/** OQ-8 · Desactivar cuidador (motivo opcional). */
+export class DeactivateCaregiverDto {
+  @ApiPropertyOptional({ example: 'Denuncia de un familiar' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(400)
+  reason?: string;
+}
+
 /** UC-19 · Set de insignias de verificación (los tres niveles son independientes). */
 export class SetBadgesDto {
   @ApiPropertyOptional({ example: true })
