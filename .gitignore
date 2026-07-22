@@ -1,0 +1,8 @@
+# Sub-repositorios del proyecto (cada uno tiene su propio repo Git y remote).
+# El repo "Keru" es solo el paraguas que agrupa specs, .claude, addl y docs de scope.
+/Keru-API/
+/Keru-App/
+/Keru-Webapp/
+
+# OS / editor
+.DS_Store
