@@ -134,12 +134,14 @@ flowchart LR
   7. El sistema crea el perfil en estado **pendiente de verificación** y lo encola para revisión del administrador (UC-19); el cuidador ve el estado de su solicitud.
 - **Flujos alternativos / excepciones:**
   - A1. Certificaciones sin institución o año: el sistema exige completar ambos campos.
+  - A2. **Re-postulación tras rechazo:** un cuidador con perfil **rechazado** puede corregir sus datos y re-enviar la postulación; el perfil vuelve a estado **pendiente**, se limpia el motivo de rechazo, las certificaciones vuelven a "no verificada" y entra de nuevo a la cola de revisión del administrador (UC-19).
 - **Postcondiciones:** Perfil creado en estado pendiente; recién al ser aprobado por el administrador (UC-19) aparece en los resultados de búsqueda (UC-06) y puede recibir solicitudes (UC-09).
 - **Criterios de aceptación:**
   - [ ] El perfil registra especialidades, certificaciones (con institución y año), disponibilidad horaria, tarifas, zona y modalidad.
   - [ ] Una cuenta de cuidador nueva **no es visible en el marketplace** hasta ser verificada y aprobada por el administrador (UC-19).
   - [ ] El cuidador puede ver el estado de su cuenta (pendiente / aprobada / rechazada).
   - [ ] Las certificaciones nacen en estado "no verificada" hasta que el proceso interno las verifique (UC-19).
+  - [ ] La re-postulación solo es posible desde el estado **rechazado** (un perfil aprobado o desactivado no se re-envía por esta vía); cada re-envío queda auditado.
 
 ---
 
@@ -223,6 +225,8 @@ flowchart LR
   - [ ] Una cuenta puede tener 1..n perfiles de paciente.
   - [ ] Cada contratación, registro clínico, invitación y reseña queda asociado a **un perfil concreto**, nunca a la cuenta en general.
   - [ ] Cambiar de perfil cambia el contexto de búsqueda, contrataciones y seguimiento sin cerrar sesión.
+  - [ ] Cualquier vinculado puede **ver la ficha completa** del paciente (datos de UC-01); la **edición** de la ficha queda reservada a los vínculos `consent-holder` y `manager` (un `viewer` solo lee).
+  - [ ] Toda edición de la ficha queda **auditada** (quién, cuándo, qué campos) — principio de trazabilidad (constitution §2.3).
 
 ---
 
@@ -302,11 +306,13 @@ flowchart LR
   3. El sistema registra la solicitud y la deja visible para el cuidador.
 - **Flujos alternativos / excepciones:**
   - A1. Fechas fuera de la disponibilidad publicada del cuidador: el sistema lo advierte.
+  - A2. **Cancelación por el solicitante:** mientras la solicitud está **pendiente**, el solicitante puede cancelarla; queda en estado `cancelada` (terminal) y el cuidador deja de verla como pendiente. Una solicitud aceptada ya no se cancela por esta vía (el cierre pasa por el ciclo de la asignación).
 - **Postcondiciones:** Solicitud creada en estado inicial (pendiente), asociada a paciente, solicitante y cuidador.
 - **Criterios de aceptación:**
   - [ ] La solicitud captura: paciente, modalidad, fechas, requerimientos especiales y datos de contacto.
   - [ ] Cada solicitud pertenece a **un único paciente**; contratar para varios pacientes genera solicitudes separadas, y el cuidador acepta o rechaza cada una por separado (UC-10).
-  - [ ] La solicitud tiene un ciclo de vida con estados: **pendiente → aceptada / rechazada → en curso → finalizada**, que habilita los flujos posteriores de asignación, métricas y reseñas. *(Si se incluye el módulo de pagos, se insertará un estado "pagada" entre la aceptación y el inicio del servicio.)*
+  - [ ] La solicitud tiene un ciclo de vida con estados: **pendiente → aceptada / rechazada / cancelada / vencida → en curso → finalizada**, que habilita los flujos posteriores de asignación, métricas y reseñas. *(Si se incluye el módulo de pagos, se insertará un estado "pagada" entre la aceptación y el inicio del servicio.)*
+  - [ ] Solo el **solicitante** puede cancelar, y solo en estado **pendiente**; la cancelación queda auditada.
 
 ---
 
@@ -531,6 +537,7 @@ flowchart LR
   - [ ] Se notifica a todos los familiares vinculados al paciente.
   - [ ] Toda alerta queda en el centro de notificaciones aunque el push esté deshabilitado; el push es adicional, nunca el único registro.
   - [ ] La campana muestra el contador de notificaciones no leídas.
+  - [ ] El receptor puede marcar una notificación como leída o **todas de una vez**; ambas operaciones son idempotentes.
 
 ---
 
