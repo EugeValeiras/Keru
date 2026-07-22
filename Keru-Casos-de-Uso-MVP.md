@@ -377,11 +377,18 @@ flowchart LR
 - **Flujos alternativos / excepciones:**
   - A1. Valores fuera de rango fisiológico plausible (error de tipeo): el sistema advierte antes de guardar.
   - A2. Valor fuera del rango configurado: se dispara la alerta a los familiares (UC-18).
-- **Postcondiciones:** Registro disponible de inmediato en el historial y los gráficos del paciente (UC-14/15).
+  - A3. **Llegada tardía no autorizada → cuarentena (NFR-30).** La autoridad se evalúa al **tiempo de medición** (`measuredAt`), no al de llegada. Si quien registra es un cuidador con relación de cuidado con el paciente (alguna asignación, vigente o histórica) pero **ninguna asignación cubre el tiempo de medición** (p. ej. sincronización tardía después del fin del turno), el registro **no se descarta ni se rechaza en silencio**: el sistema persiste el intento completo (valores, tiempo de medición, autor con rol) en **cuarentena**, se lo comunica a quien registró y notifica al círculo del paciente (UC-18).
+    - El círculo del paciente ve los items en cuarentena. **Resuelven** el consent-holder o un manager del vínculo (UC-03); los viewers solo los ven.
+    - **Aprobar**: el registro entra al historial (UC-14) con su **tiempo de medición original** (NFR-36) y su autor original; si corresponde, se evalúan las alertas (A2) al ingresar.
+    - **Descartar**: el item queda marcado como descartado — nunca se borra (trazabilidad).
+    - Ambas resoluciones quedan auditadas: quién resolvió, cuándo y qué decidió.
+  - A4. Quien registra no tiene **ninguna** relación con el paciente (ni vínculo ni asignación alguna): se rechaza (403). No es una llegada tardía; no entra en cuarentena.
+- **Postcondiciones:** Registro disponible de inmediato en el historial y los gráficos del paciente (UC-14/15) — o en cuarentena a la espera de resolución del círculo (A3).
 - **Criterios de aceptación:**
   - [ ] Cada registro persiste: valores, fecha/hora y **autor con su rol** (trazabilidad).
   - [ ] Solo pueden registrar: cuidadores con asignación vigente y familiares vinculados al paciente.
   - [ ] Los registros no se editan silenciosamente: cualquier corrección conserva la trazabilidad.
+  - [ ] Una llegada tardía no autorizada queda en cuarentena — nunca se descarta en silencio (NFR-30) — y el círculo la resuelve (aprueba/descarta) con auditoría; un registro aprobado conserva su tiempo de medición original (NFR-36).
 
 ---
 
@@ -394,10 +401,12 @@ flowchart LR
   1. El usuario (cuidador o familiar) abre la ficha del paciente.
   2. Registra: **medicamento, dosis, horario y observaciones**.
   3. El sistema guarda el registro fechado y asociado al usuario que lo cargó.
-- **Postcondiciones:** Registro visible en el historial del paciente (UC-14).
+- **Flujos alternativos / excepciones:**
+  - A1. Llegada tardía no autorizada → cuarentena, con la misma resolución por el círculo que UC-12 A3 (NFR-30).
+- **Postcondiciones:** Registro visible en el historial del paciente (UC-14), o en cuarentena (UC-12 A3).
 - **Criterios de aceptación:**
   - [ ] Cada registro persiste: medicamento, dosis, horario, observaciones, fecha/hora y autor con su rol.
-  - [ ] Mismas reglas de trazabilidad y permisos que UC-12.
+  - [ ] Mismas reglas de trazabilidad y permisos que UC-12, incluida la cuarentena de llegadas tardías (UC-12 A3).
 
 ---
 
@@ -410,10 +419,13 @@ flowchart LR
   1. El usuario abre la ficha del paciente.
   2. Escribe la novedad/comentario.
   3. El sistema la guarda fechada y asociada al autor, y la integra al historial cronológico (UC-14).
-- **Postcondiciones:** Novedad visible en el historial; dispara una alerta a los familiares (UC-18).
+- **Flujos alternativos / excepciones:**
+  - A1. Llegada tardía no autorizada → cuarentena, con la misma resolución por el círculo que UC-12 A3 (NFR-30).
+- **Postcondiciones:** Novedad visible en el historial (o en cuarentena, UC-12 A3); dispara una alerta a los familiares (UC-18).
 - **Criterios de aceptación:**
   - [ ] La novedad persiste: texto, fecha/hora y autor con su rol.
   - [ ] Aparece intercalada cronológicamente con signos vitales y medicación en el historial.
+  - [ ] Mismas reglas de cuarentena de llegadas tardías que UC-12 (A3).
 
 ---
 
