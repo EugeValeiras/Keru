@@ -149,7 +149,7 @@ flowchart LR
 - **Actor principal:** Familiar invitado
 - **Actor secundario:** Paciente o familiar ya vinculado (quien invita)
 - **Referencia al scope:** §2 (rol Familiar), §3.4 ("familiares vinculados al paciente") + decisión de producto (mecánica de invitación)
-- **Descripción:** El vínculo familiar–paciente se establece mediante un **código/link de invitación** que se comparte por WhatsApp, mail u otro canal. Si el invitado no tiene la app, el link abre la **web de Keru** para confirmar el vínculo. Al confirmar, si no está registrado, se lo envía al registro para crear su usuario y el vínculo se completa al terminar.
+- **Descripción:** El vínculo familiar–paciente se establece mediante un **código/link de invitación** que se comparte por WhatsApp, mail u otro canal. Si el invitado no tiene la app, el link abre la **web de Keru** para confirmar el vínculo. Al confirmar, si no está registrado, se lo envía al registro para crear su usuario y el vínculo se completa al terminar. Las invitaciones emitidas se **gestionan** desde la ficha del paciente: cualquier vinculado puede ver cuáles están vivas (estado y vencimiento) y una invitación pendiente emitida por error puede **revocarse** (solo el emisor o un `consent-holder`), dejándola inutilizable.
 - **Precondiciones:** Existe la ficha del paciente (UC-01).
 - **Flujo principal:**
   1. El paciente o un familiar ya vinculado genera un código/link de invitación desde la ficha del paciente.
@@ -160,8 +160,10 @@ flowchart LR
   6. Si ya está registrado, inicia sesión y el sistema establece el vínculo.
 - **Flujos alternativos / excepciones:**
   - A1. **Invitado no registrado:** al confirmar, el sistema lo envía al registro para crear su usuario; al completarlo, el vínculo con el paciente se establece automáticamente (la invitación no se pierde durante el registro).
-  - A2. Código/link inválido o vencido: el sistema lo informa y no crea el vínculo.
+  - A2. Código/link inválido, vencido o **revocado**: el sistema lo informa y no crea el vínculo.
   - A3. El invitado no confirma (cierra o rechaza): no se crea ningún vínculo.
+  - A4. **Listar invitaciones emitidas:** cualquier vinculado al paciente ve, desde la ficha/modal de invitar, las invitaciones emitidas con invitado, rol a otorgar, estado (`pending`/`accepted`/`revoked`) y vencimiento. Quien no está vinculado recibe 403.
+  - A5. **Revocar una invitación:** el **emisor** de la invitación o un vinculado **`consent-holder`** puede revocar una invitación **pendiente** (con confirmación previa en la UI). Queda en estado `revoked`, el link deja de ser válido (la previsualización la muestra inválida y la confirmación falla) y la acción queda **auditada**. Otro vinculado (p. ej. un `viewer` o un `manager` que no la emitió) recibe 403. Una invitación ya **aceptada** no puede revocarse (el vínculo creado se gestiona desde el círculo); re-revocar una ya revocada no cambia nada.
 - **Postcondiciones:** El familiar queda vinculado al paciente: puede buscar/contratar cuidadores para él, consultar su estado y cargar datos clínicos.
 - **Criterios de aceptación:**
   - [ ] El código/link de invitación es único y está asociado a un paciente concreto.
@@ -170,7 +172,10 @@ flowchart LR
   - [ ] Si el invitado no está registrado, tras crear su usuario el vínculo se establece sin pasos adicionales.
   - [ ] Un paciente puede tener uno o más familiares vinculados.
   - [ ] El familiar solo accede a datos de pacientes a los que está vinculado.
-  - **A definir:** vigencia/expiración del código y si es de un solo uso o reutilizable.
+  - [ ] Cualquier vinculado puede **listar** las invitaciones emitidas del paciente con estado y vencimiento; quien no está vinculado recibe 403.
+  - [ ] Solo el **emisor** o un **`consent-holder`** puede **revocar** una invitación pendiente; otro vinculado recibe 403. La revocación queda auditada.
+  - [ ] Una invitación **revocada queda inutilizable**: la previsualización devuelve `valid=false` y la confirmación falla; una aceptada no puede revocarse.
+  - **Resuelto (OQ-2 / NFR-19):** el código vence a los **30 minutos** y es de **un solo uso**.
 
 ---
 
