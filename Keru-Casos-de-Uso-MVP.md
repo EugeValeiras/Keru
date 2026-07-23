@@ -385,7 +385,7 @@ flowchart LR
   3. El sistema guarda el registro **fechado (fecha y hora) y asociado al usuario que lo cargó** (cuidador o familiar).
 - **Flujos alternativos / excepciones:**
   - A1. Valores fuera de rango fisiológico plausible (error de tipeo): el sistema advierte antes de guardar.
-  - A2. Valor fuera del rango configurado: se dispara la alerta a los familiares (UC-18).
+  - A2. Valor fuera del rango aplicable: se dispara la alerta a los familiares (UC-18). El rango aplicable se resuelve en la **versión de rango vigente al tiempo de medición** (`measuredAt`), eligiendo el **estrato etario** del paciente si existe uno más específico (NFR-17); la alerta persiste **qué versión de rango aplicó** (NFR-28), para que "por qué disparó / no disparó a esa hora" siempre tenga respuesta.
   - A3. **Llegada tardía no autorizada → cuarentena (NFR-30).** La autoridad se evalúa al **tiempo de medición** (`measuredAt`), no al de llegada. Si quien registra es un cuidador con relación de cuidado con el paciente (alguna asignación, vigente o histórica) pero **ninguna asignación cubre el tiempo de medición** (p. ej. sincronización tardía después del fin del turno), el registro **no se descarta ni se rechaza en silencio**: el sistema persiste el intento completo (valores, tiempo de medición, autor con rol) en **cuarentena**, se lo comunica a quien registró y notifica al círculo del paciente (UC-18).
     - El círculo del paciente ve los items en cuarentena. **Resuelven** el consent-holder o un manager del vínculo (UC-03); los viewers solo los ven.
     - **Aprobar**: el registro entra al historial (UC-14) con su **tiempo de medición original** (NFR-36) y su autor original; si corresponde, se evalúan las alertas (A2) al ingresar.
@@ -550,11 +550,11 @@ flowchart LR
 - **Actor principal:** Familiar (receptor); disparado por registros del Cuidador o de otro Familiar
 - **Referencia al scope:** §3.7, elevado de opcional a **obligatorio** por decisión de producto
 - **Descripción:** Aviso al familiar cuando un signo vital queda fuera de rango o cuando se registra una novedad. Al instalar/abrir la app por primera vez, Keru pide permiso para enviar notificaciones push; si el usuario acepta, recibe push; si no, las alertas quedan disponibles en un **centro de notificaciones dentro de la app (campana)**. La campana existe siempre; el push es adicional.
-- **Precondiciones:** Familiar vinculado; rangos de referencia definidos por métrica.
+- **Precondiciones:** Familiar vinculado; rangos de referencia **versionados** por métrica (defaults del sistema sembrados desde el catálogo; estratos etarios opcionales).
 - **Flujo principal:**
   1. En el primer inicio, la app solicita permiso para enviar notificaciones (flujo nativo de iOS/Android; permiso del navegador en web).
   2. El cuidador o un familiar registra un signo vital (UC-12) o una novedad (UC-20).
-  3. El sistema evalúa el valor contra el rango configurado (o detecta la novedad).
+  3. El sistema evalúa el valor contra la **versión de rango aplicable** — el estrato etario del paciente si existe, vigente al tiempo de medición — y registra qué versión aplicó (NFR-17/28); o detecta la novedad.
   4. El sistema genera la alerta y la deposita **siempre** en el centro de notificaciones (campana) de cada familiar vinculado, con contador de no leídas. El fan-out es **idempotente por destinatario**: una misma alerta nunca produce dos notificaciones para el mismo destinatario (NFR-27).
   5. Si el familiar aceptó el permiso, además recibe la notificación push.
   6. El sistema registra el **outcome de entrega por destinatario y canal** (NFR-26): la campana queda `delivered` al persistir la notificación; el push registra el resultado real del envío (`delivered` / `failed`), nunca "aceptado por el proveedor" como entregado. Entregada ≠ vista (NFR-11).
@@ -563,8 +563,8 @@ flowchart LR
   - A1. Permiso de push rechazado: las alertas se ven solo en la campana; el usuario puede activar el permiso más tarde desde los ajustes de la app.
   - A2. **Escalación de críticas no acusadas (NFR-11/26).** Una alerta **crítica** (signo fuera de rango) que nadie del círculo acusó dentro del umbral configurado (`ALERT_ESCALATION_MINUTES`, default 15) se **re-notifica** una vez al círculo por push, y la escalación queda registrada en la alerta. Las alertas informativas (novedades, eventos de contratación) no escalan.
   - A3. **Supersede / age-out (anti-T7).** Una alerta más nueva del **mismo tipo y paciente** reemplaza (supersede) a la anterior no acusada: la vieja queda marcada como reemplazada y **sale del circuito de escalación** — un backlog o una recuperación del proveedor de push nunca inunda al círculo con alertas obsoletas. La notificación en la campana no se borra (la campana es la garantía).
-- **Puntos a definir:** quién configura los rangos por métrica y sus valores por defecto; ampliación de destinatarios más allá del círculo en escalaciones repetidas (el MVP re-notifica al círculo, no amplía).
-- **Postcondiciones:** Alerta persistida en el centro de notificaciones con estado leída/no leída, outcome de entrega por destinatario y canal, y acuse/escalación/supersede registrados.
+- **Puntos a definir:** quién configura los rangos por métrica y sus valores por defecto (NFR-18, decisión abierta); ampliación de destinatarios más allá del círculo en escalaciones repetidas (el MVP re-notifica al círculo, no amplía). Hasta decidir NFR-18 **no existe endpoint de configuración de rangos**: un cambio de rango es configuración crítica de seguridad (NFR-29) y queda diferido; los defaults del sistema viven **versionados en la base (append-only, efectivo-fechados)** sembrados desde el catálogo de métricas.
+- **Postcondiciones:** Alerta persistida en el centro de notificaciones con estado leída/no leída, versión de rango aplicada, outcome de entrega por destinatario y canal, y acuse/escalación/supersede registrados.
 - **Criterios de aceptación:**
   - [ ] La alerta identifica paciente, métrica, valor registrado y hora (o el texto de la novedad).
   - [ ] Se notifica a todos los familiares vinculados al paciente.
@@ -622,7 +622,8 @@ flowchart LR
 | **RegistroMedicación** | medicamento, dosis, horario, observaciones, fecha/hora, autor (cuidador o familiar) | pertenece a Paciente |
 | **Novedad/Comentario** | texto, fecha/hora, autor (cuidador o familiar) | pertenece a Paciente |
 | **Reseña** | calificación, comentario, autor, destinatario (cuidador o paciente), fecha | pertenece a Contratación; **bidireccional** |
-| **Alerta / Notificación** | tipo (signo fuera de rango / novedad / evento de contratación — cancelación o no-show, UC-09 A3/A4), severidad (crítica / informativa, NFR-27), métrica, valor, fecha/hora, destinatarios, estado leída/no leída (leída = acuse, NFR-11), **outcome de entrega por destinatario y canal** (campana / push: delivered / failed, NFR-26), escalación (timestamp si se re-notificó) y supersede (alerta más nueva del mismo tipo/paciente que la reemplazó, anti-T7); **única por (alerta, destinatario)** | Paciente → Familiares (o contraparte de la contratación); vive en el centro de notificaciones (campana) |
+| **VersiónDeRango** | métrica, alcance (default del sistema; override por paciente pendiente de NFR-18), estrato etario opcional (edad mín/máx en años), mín/máx/unidad, vigencia desde, autor con rol | CareRecord es el dueño de escritura; **append-only efectivo-fechada: nunca se sobrescribe ni se borra** (NFR-17/28); las Alertas referencian la versión aplicada |
+| **Alerta / Notificación** | tipo (signo fuera de rango / novedad / evento de contratación — cancelación o no-show, UC-09 A3/A4), severidad (crítica / informativa, NFR-27), métrica, valor, **versión de rango aplicada** (NFR-28), fecha/hora, destinatarios, estado leída/no leída (leída = acuse, NFR-11), **outcome de entrega por destinatario y canal** (campana / push: delivered / failed, NFR-26), escalación (timestamp si se re-notificó) y supersede (alerta más nueva del mismo tipo/paciente que la reemplazó, anti-T7); **única por (alerta, destinatario)** | Paciente → Familiares (o contraparte de la contratación); vive en el centro de notificaciones (campana) |
 | **Asignación** | cuidador, paciente, período (inicio/fin), vigente o histórica | Cuidador ↔ Paciente; conserva el historial para UC-16 |
 
 ---
