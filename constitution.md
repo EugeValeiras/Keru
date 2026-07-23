@@ -111,6 +111,7 @@ La autorización (¿esta cuenta puede leer/registrar sobre este paciente?) la de
 | Estructura | **Nest monorepo**: `apps/keru-api` (1 deploy) + `libs/{dominio}` + `libs/core` | Separable por deploy sin reescribir |
 | Base de datos | **PostgreSQL** | Dos particiones lógicas: *marketplace* y *clínico+background* (schemas separados) |
 | ORM | **TypeORM** | |
+| Gestión de esquema | **Migraciones TypeORM versionadas** (`libs/core/src/migrations`, scripts `migration:*`) | `synchronize` puede alterar el store clínico en silencio (viola NFR-25): default apagado, opt-in explícito solo en bases descartables de dev/e2e (KER-29) |
 | Outbox / mensajería | **Outbox en Postgres + BullMQ (Redis)** | Commit atómico registro+evento; dispatcher encolado MM→HM, HM→CRM, CRM→CCM |
 | Read model (CareConsult) | Diferido en el MVP | Se lee del store clínico directo hasta que la escala pida proyección async |
 | Topología de deploy | **1 deploy (monolito modular)** | Primer split futuro: unidad clínica (CareRecord) |
