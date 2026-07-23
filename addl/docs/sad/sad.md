@@ -2927,7 +2927,8 @@ Significant decisions that are too large or contested to fit in a single SAD cel
 
 | ADR | Title | Status | Referenced from |
 |---|---|---|---|
-| -- | (none as of 2026-07-11) | -- | -- |
+| [ADR-0001](../adr/ADR-0001-stack-y-topologia-monolito-modular.md) | Stack técnico y topología de deploy: monolito modular (1 deploy) — incluye la excepción a Topology rows 60-63 (NFR-46..49) y la señal medible de split | Accepted (retroactive, 2026-07-23) | §Technical Considerations -- Development technology; §Deployment Unit Boundaries; `constitution.md §3/§4` |
+| [ADR-0002](../adr/ADR-0002-alcance-nfr-34-operation-identity.md) | Alcance de NFR-34: operation-identity solo en efectos no-idempotentes (relajación registrada del residual) | Accepted (retroactive, 2026-07-23) | `residual-design.md` NFR-34; `constitution.md §5` | 
 
 ### Audit Status
 

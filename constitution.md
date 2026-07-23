@@ -35,7 +35,7 @@ Keru es un marketplace de cuidadores que conecta pacientes y familias con cuidad
 
 ## 3. Arquitectura (IDesign residual)
 
-El sistema se descompone en **5 dominios** (= los 5 "Manager services" del diseño residual). En esta etapa se despliegan como **monolito modular (1 deploy)**, con los límites preparados para separar por deploy el día que la escala lo pida.
+El sistema se descompone en **5 dominios** (= los 5 "Manager services" del diseño residual). En esta etapa se despliegan como **monolito modular (1 deploy)**, con los límites preparados para separar por deploy el día que la escala lo pida. El 1-deploy es una **excepción registrada** a las cuatro filas topológicas que piden separación física (NFR-46..49, pipelines separados incluidos): ver **`addl/docs/adr/ADR-0001`**, que fija además la señal medible que dispara el split.
 
 | Dominio (módulo) | Qué hace | Casos de uso |
 |---|---|---|
@@ -88,8 +88,10 @@ El build **falla** si:
 - Un servicio no-dueño referencia un verbo de escritura de otro dominio.
 - **Un Manager/Engine/Controller inyecta `@InjectRepository` o `@InjectDataSource`** (§3.4: DB solo vía ResourceAccess).
 - Un verbo mutante de ResourceAccess no lleva parámetro de **operation-identity** (idempotencia, NFR-34).
-- La evaluación de alertas lee del read model en vez del store clínico de escritura.
-- Un registro clínico se commitea sin su obligación de alerta en la misma transacción (outbox).
+- La evaluación de alertas lee del read model en vez del store clínico de escritura. *(Regla vigente pero **aún sin cablear** como test de arquitectura — hoy trivial porque el read model está diferido; auditoría 2026-07-22 §2.7.)*
+- Un registro clínico se commitea sin su obligación de alerta en la misma transacción (outbox). *(Regla vigente pero **aún sin cablear** como aserción automática; se cumple por diseño de `CareRecordManager` y se protege en code review; auditoría §2.7.)*
+
+> Las de arriba se enforzan con `eslint-plugin-boundaries` + reglas locales (`eslint.config.mjs`) salvo donde se anota lo contrario. La fitness function de **pipelines separados** (Topology row 63) es inaplicable al monolito 1-deploy: excepción registrada en **ADR-0001**.
 
 ### 3.7 Autorización — fuente única (PermissionEngine + Ports & Adapters)
 La autorización (¿esta cuenta puede leer/registrar sobre este paciente?) la decide **un único** `PermissionEngine`; **ningún Manager decide permisos por su cuenta**. El engine no sabe de dónde salen los datos: depende de un **contrato** (`AuthorityProvider`, patrón *port*) que responde "¿qué rol tiene la cuenta en el vínculo?" y "¿tiene asignación vigente en `at`?" (NFR-30: evaluado al momento de la medición).
@@ -99,11 +101,13 @@ La autorización (¿esta cuenta puede leer/registrar sobre este paciente?) la de
 - **Cableado:** `AuthorizationModule` (global) provee el engine ya conectado al adapter y lo expone; los dominios inyectan `PermissionEngine`. Así se evita el ciclo con `core` (core no puede importar Membership/Hiring) y se mantiene una sola fuente de autorización.
 - **Para tests:** se inyecta un `StubAuthorityProvider` (falso) sin tocar la base.
 
-> Deuda conocida: `HiringManager` hace su chequeo de vínculo inline (`getLink`) en vez de vía `PermissionEngine`, porque importar el AuthorizationModule le crearía un ciclo. Es funcionalmente correcto pero es el único punto donde la autorización no pasa por el engine.
+> Deuda conocida (dos puntos donde la autorización no pasa por el engine, ambos funcionalmente correctos): (1) `HiringManager` hace su chequeo de vínculo inline (`getLink`) en vez de vía `PermissionEngine`, porque importar el AuthorizationModule le crearía un ciclo; (2) `ReputationManager` chequea inline la propiedad del servicio (solo el solicitante reseña al cuidador / solo el cuidador al paciente — auditoría 2026-07-22 §2.4). Migrarlos al engine es deuda de "próxima tanda", no una decisión.
 
 ---
 
 ## 4. Stack técnico (decidido)
+
+> Registrado retroactivamente como **`addl/docs/adr/ADR-0001`** (el SAD exige ADR previo a implementar; la violación de proceso quedó asentada ahí). Ante conflicto, manda el ADR.
 
 | Decisión | Elección | Notas |
 |---|---|---|
@@ -112,9 +116,9 @@ La autorización (¿esta cuenta puede leer/registrar sobre este paciente?) la de
 | Base de datos | **PostgreSQL** | Dos particiones lógicas: *marketplace* y *clínico+background* (schemas separados) |
 | ORM | **TypeORM** | |
 | Gestión de esquema | **Migraciones TypeORM versionadas** (`libs/core/src/migrations`, scripts `migration:*`) | `synchronize` puede alterar el store clínico en silencio (viola NFR-25): default apagado, opt-in explícito solo en bases descartables de dev/e2e (KER-29) |
-| Outbox / mensajería | **Outbox en Postgres + BullMQ (Redis)** | Commit atómico registro+evento; dispatcher encolado MM→HM, HM→CRM, CRM→CCM. Dispatch con reintentos + backoff exponencial y **dead-letter** persistente e inspeccionable (KER-33) |
+| Outbox / mensajería | **Outbox en Postgres + BullMQ (Redis)** | Commit atómico registro+evento. Dispatcher encolado **implementado**: MM→HM (`CaregiverDeactivated`) y HM→CRM (`AssignmentClosed`, campana de cierre al círculo). **Definidos en el envelope pero diferidos** (sin emisor ni handler): `AssignmentActivated` (HM→CRM) y `ClinicalRecordCommitted` (CRM→CCM — cae junto con el read model diferido). Dispatch con reintentos + backoff exponencial y **dead-letter** persistente e inspeccionable (KER-33) |
 | Read model (CareConsult) | Diferido en el MVP | Se lee del store clínico directo hasta que la escala pida proyección async |
-| Topología de deploy | **1 deploy (monolito modular)** | Primer split futuro: unidad clínica (CareRecord) |
+| Topología de deploy | **1 deploy (monolito modular)** | Primer split futuro: unidad clínica (CareRecord). Excepción a NFR-46..49 y señal medible de split (latencia del bound registro→alerta / cadencia de deploys / cierre de OQ-5) registradas en **ADR-0001** |
 
 ---
 
@@ -123,7 +127,7 @@ La autorización (¿esta cuenta puede leer/registrar sobre este paciente?) la de
 Los que un desarrollador **debe** respetar en cada feature (referencia completa: `residual-design.md §Derived NFRs`):
 
 - **NFR-34 — Idempotencia de plataforma.** Todo verbo mutante toma una *operation-identity* del cliente; efecto *at-most-once*. Es la regla de mayor apalancamiento.
-  > **Alcance (aclaración).** La clave es obligatoria en toda operación con **efecto no-idempotente** — crea una entidad nueva, **cobra un pago**, o dispara una acción irreversible — sin importar si la origina el cliente, una cola o un **webhook** (una pasarela reentrega webhooks; sin clave = doble cobro). Los verbos **naturalmente idempotentes** (aprobar → sigue aprobado, marcar favorito, set de badges, transiciones de estado con precondición) no la requieren. Estado actual: la llevan los verbos de creación (paciente, cuidador, solicitud, registro clínico); la fitness function está **cableada como lint** (regla local `keru/operation-identity` en `eslint.config.mjs`): todo verbo create/submit/record/register de un ResourceAccess sin `operationId` rompe el build, salvo exención explícita `operation-identity: exempt — <porqué>` (at-most-once por restricción única, o transacción del verbo padre). La emisión de invitaciones queda eximida por diseño de UC-03 (token nuevo por emisión); su idempotencia es decisión pendiente (KER-13).
+  > **Alcance (decisión registrada — `addl/docs/adr/ADR-0002`).** Esto **relaja** el residual (que pide la clave en *todo* verbo mutante); la relajación quedó registrada como decisión, no es una interpretación libre. La clave es obligatoria en toda operación con **efecto no-idempotente** — crea una entidad nueva, **cobra un pago**, o dispara una acción irreversible — sin importar si la origina el cliente, una cola o un **webhook** (una pasarela reentrega webhooks; sin clave = doble cobro). Los verbos **naturalmente idempotentes** (aprobar → sigue aprobado, marcar favorito, set de badges, transiciones de estado con precondición) no la requieren. Estado actual: la llevan los verbos de creación (paciente, cuidador, solicitud, registro clínico); la fitness function está **cableada como lint** (regla local `keru/operation-identity` en `eslint.config.mjs`): todo verbo create/submit/record/register de un ResourceAccess sin `operationId` rompe el build, salvo exención explícita `operation-identity: exempt — <porqué>` (at-most-once por restricción única, o transacción del verbo padre). La emisión de invitaciones queda eximida por diseño de UC-03 (token nuevo por emisión); su idempotencia es decisión pendiente (KER-13).
 - **NFR-30 — Autoridad al momento de la medición.** El permiso se evalúa al momento de medir/registrar, no al de sincronizar. Llegadas tardías no autorizadas se ponen en cuarentena, nunca se descartan en silencio.
 - **Outbox atómico (Decouple row 35).** Registro clínico + obligación de alerta se escriben en **una transacción**.
 - **Entrega confiable del outbox (G6 · Decouple row 35, KER-33).** El dispatch del outbox reintenta con backoff exponencial (intentos acotados); al agotarlos, el evento queda **dead-lettered en la tabla `outbox_event`** (fuente durable de la DLQ), visible en el back-office (`admin/ops/outbox/dead-letter`: listar + reintentar) y con log estructurado — un evento **jamás se descarta en silencio**. El reintento re-entrega el mismo evento, por lo que los handlers del worker son idempotentes (flag `dispatched`). Operacional: la API expone `GET /health` (estado de DB, Redis y **lag del outbox** = eventos pending viejos) y el contenedor lo usa como healthcheck; el proceso habilita shutdown hooks para que el worker BullMQ cierre ordenado sin jobs a mitad de vuelo en cada deploy.
@@ -156,7 +160,8 @@ Los que un desarrollador **debe** respetar en cada feature (referencia completa:
 
 Registradas para no olvidarlas; ninguna bloquea el MVP (los contratos están parametrizados):
 
-- **OQ-5 / DV-2:** jurisdicción, regulación y base de consentimiento sin decidir (afecta residencia). El contrato de consentimiento existe parametrizado.
+- **OQ-5 / DV-2:** jurisdicción, regulación y base de consentimiento sin decidir (afecta residencia). El contrato de consentimiento existe parametrizado **en el diseño** (NFR-01); en el código hoy solo existe el rol `consent-holder` — los verbos no están implementados (ver el punto siguiente).
+- **NFR-01 — verbos de consentimiento (decisión del usuario, planteada por KER-37):** el ADDL dice que `RecordConsent` / `ReadConsentBasis` (sobre `AccountAccess`, persistiendo en la partición clínica) *"exist regardless of which regime is chosen"* — es decir, **no** están bloqueados por OQ-5/DV-2; solo su parametrización lo está. Tratarlos como 100% bloqueados es una lectura generosa (auditoría 2026-07-22 §4.5). **Pregunta abierta, sin decidir:** ¿implementamos ahora los verbos parametrizados (capturar/leer base de consentimiento con el régimen como dato pendiente), o los diferimos hasta cerrar OQ-5/DV-2? Hasta que Eugenio decida, ninguna feature debe asumir una de las dos.
 - **UC-18 / NFR-18:** *quién* puede setear un rango por paciente y sus valores por defecto — hueco de negocio. Mientras tanto: sin endpoint de configuración de rangos (NFR-29) y sin override por paciente; solo defaults del sistema versionados en DB (KER-30).
 - **UC-05:** *cuándo* soporte puede asignar manualmente y qué consentimiento aplica.
 - **UC-09:** modelo de período de servicio (fijo / recurrente / open-ended) — decisión de producto; el residual usa transiciones timer-driven.
