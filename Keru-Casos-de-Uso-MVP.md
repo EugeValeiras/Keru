@@ -317,15 +317,18 @@ flowchart LR
   3. El sistema registra la solicitud y la deja visible para el cuidador.
 - **Flujos alternativos / excepciones:**
   - A1. Fechas fuera de la disponibilidad publicada del cuidador: el sistema lo advierte.
-  - A2. **Cancelación por el solicitante:** mientras la solicitud está **pendiente**, el solicitante puede cancelarla; queda en estado `cancelada` (terminal) y el cuidador deja de verla como pendiente. Una solicitud aceptada ya no se cancela por esta vía (el cierre pasa por el ciclo de la asignación).
+  - A2. **Cancelación por el solicitante:** mientras la solicitud está **pendiente**, el solicitante puede cancelarla; queda en estado `cancelada` (terminal) y el cuidador deja de verla como pendiente. Una solicitud aceptada ya no se cancela por esta vía (el cierre pasa por el ciclo de la asignación, A3).
+  - A3. **Cancelación de la asignación activa (NFR-15, stressor #27):** con la solicitud **aceptada o en curso**, cualquiera de los tres actores puede cerrar la asignación: el **solicitante**, el **cuidador** o un **administrador** (soporte). El cierre registra la razón terminal estructurada según quién cancela (`cancelled-by-requester` / `cancelled-by-caregiver` / `cancelled-by-admin`), con nota opcional; la asignación pasa a histórica, la acción queda **auditada** (actor, razón, nota) y la **contraparte recibe una notificación en la campana** (UC-18; si cancela el admin, se notifica a ambas partes). Es un verbo mutante con operation-identity (NFR-34); un reintento no duplica el cierre.
+  - A4. **No-show del cuidador (NFR-15):** si el cuidador no se presenta, el **solicitante** lo registra sobre la asignación aceptada/en curso, con el **momento del no-show** (timestamp, por defecto el del registro). El registro cierra el servicio con razón terminal `no-show`, persiste el timestamp, queda auditado y notifica al cuidador por la campana. Un servicio cerrado por `no-show` o `cancelled-by-*` **no habilita reseñas** (la elegibilidad exige la razón terminal `completed`, NFR-20).
 - **Postcondiciones:** Solicitud creada en estado inicial (pendiente), asociada a paciente, solicitante y cuidador.
 - **Criterios de aceptación:**
   - [ ] La solicitud captura: paciente, modalidad, fechas, requerimientos especiales y datos de contacto.
   - [ ] Cada solicitud pertenece a **un único paciente**; contratar para varios pacientes genera solicitudes separadas, y el cuidador acepta o rechaza cada una por separado (UC-10).
   - [ ] La solicitud tiene un ciclo de vida con estados: **pendiente → aceptada / rechazada / cancelada / vencida → en curso → completada**, que habilita los flujos posteriores de asignación, métricas y reseñas. *(Si se incluye el módulo de pagos, se insertará un estado "pagada" entre la aceptación y el inicio del servicio.)*
-  - [ ] El **cierre** del servicio registra una **razón terminal** estructurada (`completed`; el enum es extensible a `cancelled-by-{requester|caregiver|admin}`, `no-show` y `end-of-life`, que incorporan los flujos de cancelación y fin de vida). El cierre **no depende del pago** (Decouple row 49).
+  - [ ] El **cierre** del servicio registra una **razón terminal** estructurada (`completed`, `cancelled-by-{requester|caregiver|admin}`, `no-show`; el enum es extensible a `end-of-life`). El cierre **no depende del pago** (Decouple row 49).
   - [ ] Tras el cierre, el solicitante puede **declarar el pago** ("pagado", honor-mark) como marca **opcional**: no condiciona el cierre, el historial ni la elegibilidad de reseña (NFR-10/58).
-  - [ ] Solo el **solicitante** puede cancelar, y solo en estado **pendiente**; la cancelación queda auditada.
+  - [ ] La cancelación de una solicitud **pendiente** es solo del solicitante (A2); la cancelación de la **asignación activa** la puede ejecutar el solicitante, el cuidador o un admin (A3), cada una con su razón terminal, auditada y con campana a la contraparte.
+  - [ ] El **no-show** lo registra el solicitante con timestamp (A4): cierra con razón `no-show` y notifica al cuidador; no habilita reseñas.
 
 ---
 
@@ -485,11 +488,13 @@ flowchart LR
   4. Desde el perfil puede iniciar una nueva contratación (UC-09) para recontratarlo.
 - **Flujos alternativos / excepciones:**
   - A1. Un cuidador histórico ya no está activo en la plataforma: se muestra en el historial pero sin opción de recontratar.
-- **Postcondiciones:** Ninguna (consulta); puede derivar en una recontratación (UC-09).
+  - A2. **Recontratación urgente (rehire, NFR-15/23):** ante una cancelación o no-show (UC-09 A3/A4), el solicitante puede **re-contratar directo a un cuidador que ya atendió al paciente**, sin pasar por la búsqueda completa (UC-06): emite una re-solicitud dirigida (mismo ciclo de UC-09/10). La nueva solicitud **re-pinnea la tarifa vigente** del cuidador (NFR-03/21) y la respuesta muestra el **diff mínimo de tarifa**: la vigente que se pinnea vs la de la última contratación previa (NFR-23), para decidir con los términos a la vista. Si el cuidador nunca atendió al paciente, la vía urgente no aplica (se usa UC-09 normal).
+- **Postcondiciones:** Ninguna (consulta); puede derivar en una recontratación (UC-09) o en un rehire urgente (A2).
 - **Criterios de aceptación:**
   - [ ] Se muestran todos los cuidadores con asignación vigente y todos los históricos, con sus períodos de servicio.
   - [ ] Desde el historial se accede al **perfil actual** del cuidador y se puede iniciar una recontratación (UC-09).
   - [ ] El paciente y el familiar tienen acceso a esta vista.
+  - [ ] El **rehire urgente** (A2) solo aplica a cuidadores con asignación previa (vigente o histórica) con ese paciente; re-pinnea la tarifa vigente y la respuesta incluye tarifa anterior vs vigente.
 
 ---
 
@@ -604,13 +609,13 @@ flowchart LR
 | **Certificación** | tipo (enfermería, auxiliar, RCP, geriátrico…), institución, año, estado de verificación | pertenece a Cuidador |
 | **InsigniaVerificación** | nivel: certificaciones verificadas / identidad validada / antecedentes | pertenece a Cuidador |
 | **Favorito** | — | Usuario ↔ Cuidador |
-| **Contratación (Booking)** | paciente, solicitante, cuidador, modalidad (domicilio/hospital), fechas, requerimientos especiales, datos de contacto, estado (pendiente / aceptada / rechazada / en curso / completada), razón terminal del cierre (`completed` / `cancelled-by-*` / `no-show` / `end-of-life`), declaración de pago opcional post-cierre (honor-mark) | 0..2 Reseñas (una de cada parte); 0..1 Pago *(solo si se incluye el módulo de pagos)* |
+| **Contratación (Booking)** | paciente, solicitante, cuidador, modalidad (domicilio/hospital), fechas, requerimientos especiales, datos de contacto, estado (pendiente / aceptada / rechazada / en curso / completada), razón terminal del cierre (`completed` / `cancelled-by-*` / `no-show` / `end-of-life`), timestamp del no-show (si aplica, UC-09 A4), declaración de pago opcional post-cierre (honor-mark) | 0..2 Reseñas (una de cada parte); 0..1 Pago *(solo si se incluye el módulo de pagos)* |
 | **Pago** *(pendiente de decisión)* | monto, tarifa/plan elegido, estado, comprobante, fecha | pertenece a Contratación — solo si se incluye el módulo de pagos |
 | **RegistroSignosVitales** | PA sistólica, PA diastólica, frecuencia cardíaca, temperatura, saturación O₂, glucemia, fecha/hora, autor (cuidador o familiar) | pertenece a Paciente |
 | **RegistroMedicación** | medicamento, dosis, horario, observaciones, fecha/hora, autor (cuidador o familiar) | pertenece a Paciente |
 | **Novedad/Comentario** | texto, fecha/hora, autor (cuidador o familiar) | pertenece a Paciente |
 | **Reseña** | calificación, comentario, autor, destinatario (cuidador o paciente), fecha | pertenece a Contratación; **bidireccional** |
-| **Alerta / Notificación** | tipo (signo fuera de rango / novedad), métrica, valor, fecha/hora, destinatarios, estado leída/no leída | Paciente → Familiares; vive en el centro de notificaciones (campana) |
+| **Alerta / Notificación** | tipo (signo fuera de rango / novedad / evento de contratación — cancelación o no-show, UC-09 A3/A4), métrica, valor, fecha/hora, destinatarios, estado leída/no leída | Paciente → Familiares (o contraparte de la contratación); vive en el centro de notificaciones (campana) |
 | **Asignación** | cuidador, paciente, período (inicio/fin), vigente o histórica | Cuidador ↔ Paciente; conserva el historial para UC-16 |
 
 ---
