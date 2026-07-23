@@ -187,7 +187,7 @@ flowchart LR
 #### UC-04 · Iniciar sesión y autenticación por rol
 - **Actor principal:** Paciente, Familiar, Cuidador, Administrador
 - **Referencia al scope:** §3.1
-- **Descripción:** Autenticación básica; la sesión determina el rol y con él las capacidades y vistas disponibles. La sesión es **revocable server-side** (NFR-41): cerrar sesión invalida el token al instante, no al expirar. Las operaciones admin sensibles exigen **step-up** (re-confirmación de identidad con token corto, NFR-33) — un guard de rol no alcanza.
+- **Descripción:** Autenticación básica; la sesión determina el rol y con él las capacidades y vistas disponibles. La sesión es **revocable server-side** (NFR-41): cerrar sesión invalida el token al instante, no al expirar. Las operaciones admin sensibles exigen **step-up** (re-confirmación de identidad con token corto, NFR-33) — un guard de rol no alcanza. Si el usuario **olvida su contraseña**, la recupera con un flujo de **reset por email** (token de un solo uso y corta vida, patrón NFR-19) que, al confirmarse, **revoca todas las sesiones vigentes de la cuenta** (A4).
 - **Precondiciones:** Cuenta creada (UC-01/02/03).
 - **Flujo principal:**
   1. El usuario ingresa sus credenciales.
@@ -198,12 +198,18 @@ flowchart LR
   - A1. Credenciales inválidas: mensaje de error, sin sesión.
   - A2. **Token revocado:** cualquier request con un token deslistado recibe 401, igual que uno expirado — un token robado deja de valer en cuanto la sesión se cierra.
   - A3. **Operación sensible sin step-up (NFR-33):** aprobar/rechazar cuidadores (UC-19) y liberar cuarentena (UC-12 A3) exigen, además de la sesión, un **token de step-up**: el usuario re-confirma su password y el sistema emite un token corto (~5 min, claim `step_up`) que acompaña la operación. Sin él: 403 con código `STEP_UP_REQUIRED` (el cliente sabe que debe pedir la re-confirmación, no que le falta permiso). Cada **emisión** y cada **uso** del step-up quedan auditados.
-- **Postcondiciones:** Sesión activa con rol asignado; al cerrar sesión, token y push subscriptions revocados.
+  - A4. **Recuperación de contraseña (forgot/reset password):** el usuario que olvidó su contraseña la restablece sin intervención de soporte, en dos pasos:
+    1. **Pedido (`request`):** desde el login, el link "Olvidé mi contraseña" lleva a ingresar el email de la cuenta. El sistema responde **SIEMPRE con éxito neutro** — no revela si el email existe (**anti-enumeración**): la respuesta es idéntica para un email registrado y uno que no. Si la cuenta existe, el sistema emite un **token de recuperación de un solo uso y corta vida** (patrón NFR-19: alto entropía, TTL corto —30 min por defecto—, un solo uso) y le envía por email un link con el token (mejor esfuerzo: un fallo del proveedor de mail no rompe el flujo). La **emisión** queda auditada.
+    2. **Confirmación (`confirm`):** el link del email abre la pantalla de nueva contraseña con el token en el query param. El usuario define una contraseña nueva (misma validación de fuerza que el alta, UC-01/02). El sistema valida el token (no expirado, no usado); si es inválido/expirado/reusado lo **rechaza** (410, sin revelar cuál de las tres). Con token válido: setea el hash nuevo, **marca el token usado** (single-use) y **revoca todas las sesiones vigentes de la cuenta** (denylist por cuenta, NFR-41: un reset expulsa cualquier sesión abierta con la contraseña vieja, y limpia las push subscriptions de la cuenta). El **uso** queda auditado. La idempotencia (NFR-34) la garantiza el propio token de un solo uso (at-most-once por precondición de estado, ADR-0002), sin operationId aparte.
+- **Postcondiciones:** Sesión activa con rol asignado; al cerrar sesión, token y push subscriptions revocados. Tras un reset de contraseña: la contraseña queda actualizada, el token de reset consumido, y **toda sesión previa de la cuenta revocada** (sus tokens reciben 401).
 - **Criterios de aceptación:**
   - [ ] Cada endpoint/pantalla valida el rol y el vínculo: un cuidador solo opera sobre pacientes que tiene asignados; un familiar solo sobre pacientes a los que está vinculado.
   - [ ] El familiar puede consultar y también **cargar** datos clínicos de sus pacientes vinculados (UC-12, UC-13, UC-20).
   - [ ] **Logout revoca server-side:** tras cerrar sesión, el mismo token recibe 401 en cualquier endpoint protegido (NFR-41), y las push subscriptions de la sesión quedan revocadas (device notificado ≠ sesión viva).
   - [ ] **Step-up en operaciones sensibles:** aprobar/rechazar cuidador y liberar cuarentena sin token de step-up → 403 `STEP_UP_REQUIRED`; con re-confirmación de password válida (token corto, claim `step_up`) → proceden; emisión y uso auditados (NFR-33).
+  - [ ] **Reset · pedido anti-enumeración (A4.1):** `POST /auth/password-reset/request` responde 200 tanto para un email registrado como para uno inexistente (misma respuesta, sin filtrar existencia); si la cuenta existe se emite un token de un solo uso con TTL corto, se dispara el email y la emisión queda auditada.
+  - [ ] **Reset · confirmación (A4.2):** `POST /auth/password-reset/confirm` con token válido setea la contraseña nueva (misma validación de fuerza que el alta), consume el token y revoca todas las sesiones vigentes de la cuenta; con token expirado o ya usado → 410 (rechazado); el uso queda auditado.
+  - [ ] **Reset · revocación de sesiones (A4.2):** tras confirmar el reset, cualquier token de sesión emitido antes recibe 401 en endpoints protegidos (NFR-41), y las push subscriptions de la cuenta quedan revocadas.
 
 ---
 
