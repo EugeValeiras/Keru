@@ -4,5 +4,11 @@
 /Keru-App/
 /Keru-Webapp/
 
+# Orquestador LOCAL del gate de verify multi-repo (KER-46): el paraguas es solo docs y no
+# tiene proyecto npm. Un package.json local hace que `npm test` (el verifyCommand) delegue en
+# las suites de los sub-repos hermanos. Es de máquina, nunca se commitea.
+/package.json
+/package-lock.json
+
 # OS / editor
 .DS_Store
