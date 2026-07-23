@@ -555,19 +555,26 @@ flowchart LR
   1. En el primer inicio, la app solicita permiso para enviar notificaciones (flujo nativo de iOS/Android; permiso del navegador en web).
   2. El cuidador o un familiar registra un signo vital (UC-12) o una novedad (UC-20).
   3. El sistema evalúa el valor contra el rango configurado (o detecta la novedad).
-  4. El sistema genera la alerta y la deposita **siempre** en el centro de notificaciones (campana) de cada familiar vinculado, con contador de no leídas.
+  4. El sistema genera la alerta y la deposita **siempre** en el centro de notificaciones (campana) de cada familiar vinculado, con contador de no leídas. El fan-out es **idempotente por destinatario**: una misma alerta nunca produce dos notificaciones para el mismo destinatario (NFR-27).
   5. Si el familiar aceptó el permiso, además recibe la notificación push.
-  6. El familiar abre la notificación (push o campana) y aterriza en la vista del paciente (UC-14).
+  6. El sistema registra el **outcome de entrega por destinatario y canal** (NFR-26): la campana queda `delivered` al persistir la notificación; el push registra el resultado real del envío (`delivered` / `failed`), nunca "aceptado por el proveedor" como entregado. Entregada ≠ vista (NFR-11).
+  7. El familiar abre la notificación (push o campana) y aterriza en la vista del paciente (UC-14). Marcarla como leída registra el **acuse** (NFR-11).
 - **Flujos alternativos / excepciones:**
   - A1. Permiso de push rechazado: las alertas se ven solo en la campana; el usuario puede activar el permiso más tarde desde los ajustes de la app.
-- **Puntos a definir:** quién configura los rangos por métrica y sus valores por defecto.
-- **Postcondiciones:** Alerta persistida en el centro de notificaciones con estado leída/no leída.
+  - A2. **Escalación de críticas no acusadas (NFR-11/26).** Una alerta **crítica** (signo fuera de rango) que nadie del círculo acusó dentro del umbral configurado (`ALERT_ESCALATION_MINUTES`, default 15) se **re-notifica** una vez al círculo por push, y la escalación queda registrada en la alerta. Las alertas informativas (novedades, eventos de contratación) no escalan.
+  - A3. **Supersede / age-out (anti-T7).** Una alerta más nueva del **mismo tipo y paciente** reemplaza (supersede) a la anterior no acusada: la vieja queda marcada como reemplazada y **sale del circuito de escalación** — un backlog o una recuperación del proveedor de push nunca inunda al círculo con alertas obsoletas. La notificación en la campana no se borra (la campana es la garantía).
+- **Puntos a definir:** quién configura los rangos por métrica y sus valores por defecto; ampliación de destinatarios más allá del círculo en escalaciones repetidas (el MVP re-notifica al círculo, no amplía).
+- **Postcondiciones:** Alerta persistida en el centro de notificaciones con estado leída/no leída, outcome de entrega por destinatario y canal, y acuse/escalación/supersede registrados.
 - **Criterios de aceptación:**
   - [ ] La alerta identifica paciente, métrica, valor registrado y hora (o el texto de la novedad).
   - [ ] Se notifica a todos los familiares vinculados al paciente.
   - [ ] Toda alerta queda en el centro de notificaciones aunque el push esté deshabilitado; el push es adicional, nunca el único registro.
   - [ ] La campana muestra el contador de notificaciones no leídas.
   - [ ] El receptor puede marcar una notificación como leída o **todas de una vez**; ambas operaciones son idempotentes.
+  - [ ] Cada notificación persiste su outcome de entrega por canal (campana: `delivered` al persistir; push: resultado real del envío) — entregada ≠ vista (NFR-11/26).
+  - [ ] Una alerta crítica sin acuse de nadie del círculo dentro del umbral se re-notifica al círculo y registra la escalación (NFR-11).
+  - [ ] Una alerta más nueva del mismo tipo/paciente supersede a la anterior no acusada; las superseded no escalan ni se re-envían (anti-T7).
+  - [ ] El fan-out es idempotente por constraint único (alerta, destinatario) (NFR-27).
 
 ---
 
@@ -615,7 +622,7 @@ flowchart LR
 | **RegistroMedicación** | medicamento, dosis, horario, observaciones, fecha/hora, autor (cuidador o familiar) | pertenece a Paciente |
 | **Novedad/Comentario** | texto, fecha/hora, autor (cuidador o familiar) | pertenece a Paciente |
 | **Reseña** | calificación, comentario, autor, destinatario (cuidador o paciente), fecha | pertenece a Contratación; **bidireccional** |
-| **Alerta / Notificación** | tipo (signo fuera de rango / novedad / evento de contratación — cancelación o no-show, UC-09 A3/A4), métrica, valor, fecha/hora, destinatarios, estado leída/no leída | Paciente → Familiares (o contraparte de la contratación); vive en el centro de notificaciones (campana) |
+| **Alerta / Notificación** | tipo (signo fuera de rango / novedad / evento de contratación — cancelación o no-show, UC-09 A3/A4), severidad (crítica / informativa, NFR-27), métrica, valor, fecha/hora, destinatarios, estado leída/no leída (leída = acuse, NFR-11), **outcome de entrega por destinatario y canal** (campana / push: delivered / failed, NFR-26), escalación (timestamp si se re-notificó) y supersede (alerta más nueva del mismo tipo/paciente que la reemplazó, anti-T7); **única por (alerta, destinatario)** | Paciente → Familiares (o contraparte de la contratación); vive en el centro de notificaciones (campana) |
 | **Asignación** | cuidador, paciente, período (inicio/fin), vigente o histórica | Cuidador ↔ Paciente; conserva el historial para UC-16 |
 
 ---
@@ -629,6 +636,7 @@ flowchart LR
 | **Trazabilidad** de todo registro clínico: fecha/hora + autor con su rol | §3.3 + decisión de producto |
 | **Control de acceso por rol y por vínculo**: cuidador solo sobre pacientes asignados; familiar solo sobre pacientes vinculados (lectura y carga de datos) | §3.1, §3.4 + decisión de producto |
 | Notificaciones **push** (iOS / Android / web) + **centro de notificaciones in-app (campana)** con estado leída/no leída | UC-18 (decisión de producto) |
+| **Entrega observable y escalación de alertas**: outcome de entrega por destinatario y canal (entregada ≠ vista), alerta crítica no acusada se re-notifica al círculo tras un umbral, con supersede de alertas obsoletas (anti-T7) y fan-out idempotente por (alerta, destinatario) | NFR-11 / NFR-26 / NFR-27 (UC-18 A2/A3) |
 | **Deep links** de invitación: el mismo link abre la app si está instalada o la web si no (UC-03) | decisión de producto |
 | Datos de salud sensibles → privacidad y protección de datos (cifrado en tránsito y reposo, mínimos privilegios) | derivado de la naturaleza del dominio |
 | Pagos: integridad ante reintentos (sin dobles cobros), comprobante persistente | §3.5 — *solo si se incluye el módulo de pagos* |
