@@ -3,7 +3,7 @@
 > **Fuente:** `Keru-Scope-MVP.docx.pdf` (Alcance del MVP / Scope de Salida) + **decisiones de producto del 2026-07-09**: aprobación previa de cuidadores por el admin, carga de datos clínicos también por familiares, historial de cuidadores con recontratación, reseñas bidireccionales, alertas obligatorias con centro de notificaciones, vínculo familiar–paciente por **código de invitación**, el cuidador **acepta** las solicitudes, el **módulo de pagos queda pendiente de decisión** (fuera de los casos de uso por ahora), y una **cuenta puede administrar varios perfiles de paciente** (p. ej. madre y padre) con búsquedas y contrataciones por perfil.
 > **Propósito:** documento de casos de uso listo para alimentar Spec Kit (`/specify`) o una herramienta de IA de diseño de arquitectura.
 > Los supuestos de versiones anteriores (UC-03 y UC-10) ya fueron resueltos por decisiones de producto — no quedan supuestos abiertos.
-> **Numeración:** UC-20, UC-21 y UC-22 fueron agregados por decisiones de producto posteriores al scope original y se ubican dentro de su módulo. **UC-11 queda reservado** para el módulo de pagos (pendiente de decisión).
+> **Numeración:** UC-20, UC-21, UC-22 y UC-23 fueron agregados por decisiones de producto posteriores al scope original y se ubican dentro de su módulo. **UC-11 queda reservado** para el módulo de pagos (pendiente de decisión).
 
 ---
 
@@ -45,6 +45,7 @@ flowchart LR
         UC04[UC-04 Iniciar sesión por rol]
         UC05[UC-05 Asignar cuidador a paciente]
         UC22[UC-22 Gestionar perfiles de paciente]
+        UC23[UC-23 Gestionar el perfil de la cuenta]
     end
 
     subgraph B[Marketplace]
@@ -80,10 +81,10 @@ flowchart LR
         UC19[UC-19 Aprobar y verificar cuidador]
     end
 
-    FAM --> UC01 & UC03 & UC04 & UC06 & UC07 & UC08 & UC09 & UC12 & UC13 & UC14 & UC15 & UC16 & UC17 & UC18 & UC20 & UC22
-    PAC --> UC01 & UC03 & UC04 & UC06 & UC07 & UC08 & UC09 & UC16 & UC17 & UC22
-    CUI --> UC02 & UC04 & UC10 & UC12 & UC13 & UC20 & UC21
-    ADM --> UC05 & UC19
+    FAM --> UC01 & UC03 & UC04 & UC06 & UC07 & UC08 & UC09 & UC12 & UC13 & UC14 & UC15 & UC16 & UC17 & UC18 & UC20 & UC22 & UC23
+    PAC --> UC01 & UC03 & UC04 & UC06 & UC07 & UC08 & UC09 & UC16 & UC17 & UC22 & UC23
+    CUI --> UC02 & UC04 & UC10 & UC12 & UC13 & UC20 & UC21 & UC23
+    ADM --> UC05 & UC19 & UC23
 ```
 
 *(El módulo C — Pagos — no figura en el mapa porque está pendiente de decisión; ver su sección.)*
@@ -247,6 +248,35 @@ flowchart LR
   - [ ] Cualquier vinculado puede **ver la ficha completa** del paciente (datos de UC-01); la **edición** de la ficha queda reservada a los vínculos `consent-holder` y `manager` (un `viewer` solo lee).
   - [ ] Cualquier vinculado (cualquier rol) puede **ver el círculo** del paciente: por cada cuenta vinculada muestra **nombre visible, email y rol del vínculo**. Quien **no** está vinculado al paciente recibe **403** (no ve ni la existencia del círculo).
   - [ ] Toda edición de la ficha queda **auditada** (quién, cuándo, qué campos) — principio de trazabilidad (constitution §2.3).
+
+---
+
+#### UC-23 · Gestionar el perfil de la cuenta *(agregado por decisión de producto)*
+- **Actor principal:** Titular de la cuenta autenticada (cualquier rol: paciente, familiar, cuidador, administrador)
+- **Referencia al scope:** no estaba en el scope original; decisión de producto (feedback de usuario 2026-07-23)
+- **Descripción:** Toda cuenta, sea del rol que sea, tiene un **perfil propio** — el nombre visible y la **foto de la cuenta** que la identifican en la aplicación (avatar del encabezado, menú de cuenta). Es distinto de la ficha del **paciente** (UC-01/UC-22) y del perfil profesional del **cuidador** (UC-02): esos describen a *un paciente* o *un profesional del marketplace*; este describe a **la persona detrás del login**. El titular ve sus datos (nombre, email, rol, foto) y edita **nombre y foto**; el **email no se edita** (es la identidad de login, UC-04). El cambio es inmediato y se refleja al instante en el avatar del encabezado sin recargar.
+- **Precondiciones:** Cuenta creada y sesión activa (UC-04).
+- **Flujo principal:**
+  1. El titular abre el **menú de cuenta** desde el **avatar** del encabezado (siempre visible, con su foto real; si no tiene foto, muestra la inicial de su nombre con un color derivado de su identidad). El menú lista su nombre, su email, "Mi perfil" y "Cerrar sesión".
+  2. Elige **"Mi perfil"** y llega a la página de perfil de la cuenta, donde ve nombre, email, rol y foto.
+  3. Edita su **nombre** y/o su **foto** (la foto se sube y se previsualiza de inmediato antes de guardar).
+  4. Guarda. El sistema valida y persiste los cambios; el **avatar del encabezado se actualiza al instante** (sin recargar) y se muestra una confirmación de éxito.
+- **Flujos alternativos / excepciones:**
+  - A1. **Nombre vacío o inválido:** el sistema señala el campo y no persiste.
+  - A2. **Foto opcional:** el perfil funciona sin foto; en ese caso el avatar cae al fallback inicial+color. Quitar la foto vuelve al fallback.
+  - A3. **Email no editable:** el email se muestra como dato de solo lectura; no es modificable por esta vía (es la identidad de login, UC-04).
+  - A4. **URL de foto inválida:** si la foto no corresponde a una imagen subida por la vía oficial (UC de infraestructura `POST /files/images`), el sistema la rechaza (validación de patrón) — no se aceptan URLs arbitrarias.
+  - A5. **Cerrar sesión desde el menú:** "Cerrar sesión" ejecuta el logout server-side (UC-04, NFR-41) desde el mismo menú de cuenta.
+- **Postcondiciones:** El nombre y/o la foto de la cuenta quedan actualizados y se ven en todas las vistas que muestran la identidad de la cuenta (empezando por el avatar del encabezado). El rol y el email permanecen intactos.
+- **Criterios de aceptación:**
+  - [ ] El **encabezado muestra siempre el avatar** de la cuenta con su **foto real**; sin foto, el fallback es la **inicial + un color determinístico** por identidad. Visible en todos los roles.
+  - [ ] El avatar abre un **menú de cuenta accesible** (navegable por teclado, roles ARIA, foco atrapado, cierre con Escape/click afuera) con **nombre, email, "Mi perfil" y "Cerrar sesión"**. El logout vive en este menú.
+  - [ ] La página **"Mi perfil"** muestra nombre, email, rol y foto, y permite **editar nombre y foto con previsualización inmediata**; el **email es de solo lectura**.
+  - [ ] Al **guardar**, el avatar del encabezado **se actualiza sin recargar**; el guardado da feedback de éxito (toast) y estados de carga.
+  - [ ] La **foto** solo se acepta si fue subida por la vía oficial (`POST /files/images`): la URL se **valida contra su patrón** (misma regla que el perfil del cuidador). El **email nunca** cambia por esta vía.
+  - [ ] La página nueva respeta el **brand book** y mantiene **accesibilidad AA** (auditoría axe verde).
+
+> **Nota de dominio (Membership):** el perfil de la cuenta se expone con `GET /accounts/me` (datos propios: id, email, name, photoUrl, role) y se edita con `PATCH /accounts/me` (name?, photoUrl?). El **dueño único de escritura** de la cuenta es **Membership** (`MembershipManager` → `AccountAccess`); la mutación respeta las Call Rules y valida `photoUrl` contra el patrón de `/files/images`. `PATCH` es naturalmente idempotente (fija el estado del nombre/foto): sigue el criterio de NFR-34/ADR-0002 (los verbos idempotentes no requieren *operation-identity*).
 
 ---
 
