@@ -130,6 +130,26 @@ la suite propia (proyecto `keru`, tareas `KER-N`), con pipeline
 - Cada tarea trabaja en un **worktree** propio (`.kanban/worktrees/`) y termina en PR sobre
   el repo que toque; las features nuevas entran como tarea antes que como código.
 
+### Rootear los agentes en el paraguas (obligatorio para features)
+
+La skill `keru-feature` y los docs canónicos viven **solo acá, en el paraguas**, pero el código
+vive en los sub-repos. Para que un agente del Kanban arranque con la skill auto-disparada y los
+docs a mano *y* pueda editar el código, la tarea debe seleccionar los **tres repos con el
+paraguas primero** (el primer repo es el *primario*: define el `cwd` del agente y del verify):
+
+```bash
+kanban task create "<título>" -p keru --repo Keru --repo Keru-API --repo Keru-Webapp
+```
+
+Con esto el agente abre en el worktree de `Keru` (carga `.claude/skills/keru-feature` +
+`constitution.md` + `Keru-Casos-de-Uso-MVP.md`) y recibe worktrees hermanos de `Keru-API` y
+`Keru-Webapp` —listados en el bundle bajo *"## Repositorios de la tarea"*— donde edita el código;
+la integración abre **un PR por sub-repo con cambios** (el paraguas limpio no fuerza PR vacío).
+Como los sub-repos están gitignoreados acá, un worktree del paraguas **no** trae su código: por
+eso se seleccionan como repos aparte, no se enlazan. **Caveat:** el gate de verify corre en el
+worktree del primario (el paraguas); si el `verifyCommand` es e2e de un sub-repo, apuntalo al
+worktree hermano del sub-repo o dejá el verify del lado del sub-repo. Decidido en **KER-43**.
+
 ## Links
 
 | Recurso | Link |
