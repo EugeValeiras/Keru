@@ -4,7 +4,7 @@
 >
 > **Fuentes de verdad.** Producto → `Keru-Casos-de-Uso-MVP.md`. Arquitectura → `addl/docs/architect/residual-design.md` (58 NFRs, componentes IDesign, deploys). Este documento **condensa** ambas en reglas ejecutables; ante conflicto, mandan las fuentes.
 >
-> **Última actualización:** 2026-07-20.
+> **Última actualización:** 2026-07-23.
 
 ---
 
@@ -112,7 +112,7 @@ La autorización (¿esta cuenta puede leer/registrar sobre este paciente?) la de
 | Base de datos | **PostgreSQL** | Dos particiones lógicas: *marketplace* y *clínico+background* (schemas separados) |
 | ORM | **TypeORM** | |
 | Gestión de esquema | **Migraciones TypeORM versionadas** (`libs/core/src/migrations`, scripts `migration:*`) | `synchronize` puede alterar el store clínico en silencio (viola NFR-25): default apagado, opt-in explícito solo en bases descartables de dev/e2e (KER-29) |
-| Outbox / mensajería | **Outbox en Postgres + BullMQ (Redis)** | Commit atómico registro+evento; dispatcher encolado MM→HM, HM→CRM, CRM→CCM |
+| Outbox / mensajería | **Outbox en Postgres + BullMQ (Redis)** | Commit atómico registro+evento; dispatcher encolado MM→HM, HM→CRM, CRM→CCM. Dispatch con reintentos + backoff exponencial y **dead-letter** persistente e inspeccionable (KER-33) |
 | Read model (CareConsult) | Diferido en el MVP | Se lee del store clínico directo hasta que la escala pida proyección async |
 | Topología de deploy | **1 deploy (monolito modular)** | Primer split futuro: unidad clínica (CareRecord) |
 
@@ -126,6 +126,7 @@ Los que un desarrollador **debe** respetar en cada feature (referencia completa:
   > **Alcance (aclaración).** La clave es obligatoria en toda operación con **efecto no-idempotente** — crea una entidad nueva, **cobra un pago**, o dispara una acción irreversible — sin importar si la origina el cliente, una cola o un **webhook** (una pasarela reentrega webhooks; sin clave = doble cobro). Los verbos **naturalmente idempotentes** (aprobar → sigue aprobado, marcar favorito, set de badges, transiciones de estado con precondición) no la requieren. Estado actual: la llevan los verbos de creación (paciente, cuidador, solicitud, registro clínico); la fitness function está **cableada como lint** (regla local `keru/operation-identity` en `eslint.config.mjs`): todo verbo create/submit/record/register de un ResourceAccess sin `operationId` rompe el build, salvo exención explícita `operation-identity: exempt — <porqué>` (at-most-once por restricción única, o transacción del verbo padre). La emisión de invitaciones queda eximida por diseño de UC-03 (token nuevo por emisión); su idempotencia es decisión pendiente (KER-13).
 - **NFR-30 — Autoridad al momento de la medición.** El permiso se evalúa al momento de medir/registrar, no al de sincronizar. Llegadas tardías no autorizadas se ponen en cuarentena, nunca se descartan en silencio.
 - **Outbox atómico (Decouple row 35).** Registro clínico + obligación de alerta se escriben en **una transacción**.
+- **Entrega confiable del outbox (G6 · Decouple row 35, KER-33).** El dispatch del outbox reintenta con backoff exponencial (intentos acotados); al agotarlos, el evento queda **dead-lettered en la tabla `outbox_event`** (fuente durable de la DLQ), visible en el back-office (`admin/ops/outbox/dead-letter`: listar + reintentar) y con log estructurado — un evento **jamás se descarta en silencio**. El reintento re-entrega el mismo evento, por lo que los handlers del worker son idempotentes (flag `dispatched`). Operacional: la API expone `GET /health` (estado de DB, Redis y **lag del outbox** = eventos pending viejos) y el contenedor lo usa como healthcheck; el proceso habilita shutdown hooks para que el worker BullMQ cierre ordenado sin jobs a mitad de vuelo en cada deploy.
 - **NFR-36 — Semántica del tiempo.** Tiempo de medición ≠ tiempo de llegada; el historial ordena por tiempo de medición.
 - **NFR-16 / NFR-39 — Métricas como datos.** Definición, unidad y bornes de plausibilidad viven en el catálogo; agregar una métrica es un dato, no un proyecto. Los valores llevan valor + unidad.
 - **NFR-17 / NFR-28 — Rangos versionados.** Rango aplicable = estrato → override por paciente; efectivo-fechado, nunca sobrescrito; toda evaluación registra qué versión de rango aplicó.
