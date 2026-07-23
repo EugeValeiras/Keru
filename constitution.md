@@ -132,7 +132,7 @@ Los que un desarrollador **debe** respetar en cada feature (referencia completa:
 - **NFR-03 / NFR-23 — Términos pinneados.** Las tarifas son efectivo-fechadas; una solicitud fija los términos contra los que se hizo; la aceptación se evalúa contra esos términos.
 - **NFR-19 — Invitación.** Válida **30 minutos, un solo uso**, con desafío de identidad al invitado nombrado; el alta se notifica a todo el círculo; emisión y confirmación auditadas.
 - **NFR-14 — Reloj del ciclo de vida.** Toda transición de asignación tiene dueño (actor o timer); la finalización nunca se queda esperando a un actor.
-- **NFR-20 / NFR-21 — Reseñas.** Solo con servicio finalizado (evidencia de elegibilidad); selladas hasta que ambas partes envían o cierra la ventana; **una sola vez, inmutables**.
+- **NFR-20 / NFR-21 — Reseñas.** Solo con servicio **completado** (la elegibilidad se apoya en la razón terminal `completed`, nunca en la declaración de pago — Decouple row 49); selladas hasta que ambas partes envían o cierra la ventana; **una sola vez, inmutables**.
 - **Residencia y aislamiento (NFR-45/46/47/48).** Datos clínicos in-country con claves propias; la unidad clínica sigue operando aunque el marketplace caiga; la carga del marketplace nunca frena el path de escritura/alerta clínico.
 
 ---
@@ -146,7 +146,7 @@ Los que un desarrollador **debe** respetar en cada feature (referencia completa:
 - Verificación automatizada de antecedentes con organismos externos (la verificación es interna/manual, UC-19).
 
 **Pendiente de decisión** (no diseñar aún, pero no bloquear su incorporación futura):
-- **Pagos por la plataforma** (Módulo C, **UC-11 reservado**). En el MVP el pago es **fuera de la plataforma**: la familia marca "pagado" y eso cierra la contratación. El diseño ya separa *servicio completado* de *marcado como pagado* (Decouple row 49) para no bloquear la landing futura de pagos.
+- **Pagos por la plataforma** (Módulo C, **UC-11 reservado**). En el MVP el pago es **fuera de la plataforma**. El cierre de la contratación es independiente del pago: el solicitante completa el servicio y el cierre registra una **razón terminal** estructurada (`completed`, `cancelled-by-{requester|caregiver|admin}`, `no-show`, `end-of-life` — enum extensible, KER-31/KER-32). "Pagado" es una **declaración opcional posterior al cierre** (honor-mark, `paidDeclaredAt`) que no condiciona el cierre ni la elegibilidad de reseña (Decouple row 49, NFR-10/58), para no bloquear la landing futura de pagos.
 
 ---
 

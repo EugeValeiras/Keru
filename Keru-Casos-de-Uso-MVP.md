@@ -322,7 +322,9 @@ flowchart LR
 - **Criterios de aceptación:**
   - [ ] La solicitud captura: paciente, modalidad, fechas, requerimientos especiales y datos de contacto.
   - [ ] Cada solicitud pertenece a **un único paciente**; contratar para varios pacientes genera solicitudes separadas, y el cuidador acepta o rechaza cada una por separado (UC-10).
-  - [ ] La solicitud tiene un ciclo de vida con estados: **pendiente → aceptada / rechazada / cancelada / vencida → en curso → finalizada**, que habilita los flujos posteriores de asignación, métricas y reseñas. *(Si se incluye el módulo de pagos, se insertará un estado "pagada" entre la aceptación y el inicio del servicio.)*
+  - [ ] La solicitud tiene un ciclo de vida con estados: **pendiente → aceptada / rechazada / cancelada / vencida → en curso → completada**, que habilita los flujos posteriores de asignación, métricas y reseñas. *(Si se incluye el módulo de pagos, se insertará un estado "pagada" entre la aceptación y el inicio del servicio.)*
+  - [ ] El **cierre** del servicio registra una **razón terminal** estructurada (`completed`; el enum es extensible a `cancelled-by-{requester|caregiver|admin}`, `no-show` y `end-of-life`, que incorporan los flujos de cancelación y fin de vida). El cierre **no depende del pago** (Decouple row 49).
+  - [ ] Tras el cierre, el solicitante puede **declarar el pago** ("pagado", honor-mark) como marca **opcional**: no condiciona el cierre, el historial ni la elegibilidad de reseña (NFR-10/58).
   - [ ] Solo el **solicitante** puede cancelar, y solo en estado **pendiente**; la cancelación queda auditada.
 
 ---
@@ -499,18 +501,18 @@ flowchart LR
 - **Actor principal:** Familiar o Paciente
 - **Referencia al scope:** §3.6
 - **Descripción:** Tras el servicio, el familiar/paciente califica al cuidador; las reseñas alimentan la reputación visible en el marketplace.
-- **Precondiciones:** Servicio contratado y finalizado con ese cuidador.
+- **Precondiciones:** Servicio contratado y **completado** con ese cuidador (razón terminal `completed`; la declaración de pago no influye — NFR-20, Decouple row 49).
 - **Flujo principal:**
-  1. El usuario abre la contratación finalizada.
+  1. El usuario abre la contratación completada.
   2. Ingresa una calificación (puntaje) y una reseña (comentario).
   3. El sistema guarda la reseña asociada al servicio y recalcula la reputación del cuidador (promedio y cantidad).
   4. La reseña queda visible en el perfil (UC-07) y la reputación en el listado (UC-06).
 - **Flujos alternativos / excepciones:**
-  - A1. Intento de reseñar sin servicio finalizado con ese cuidador: no permitido (evita reseñas falsas).
+  - A1. Intento de reseñar sin servicio completado con ese cuidador: no permitido (evita reseñas falsas).
   - A2. Intento de segunda reseña sobre el mismo servicio: no permitido (o edita la existente — **a definir**).
 - **Postcondiciones:** Reputación del cuidador actualizada.
 - **Criterios de aceptación:**
-  - [ ] Solo usuarios con servicio finalizado pueden reseñar a ese cuidador.
+  - [ ] Solo usuarios con servicio **completado** pueden reseñar a ese cuidador; haber declarado el pago no es requisito.
   - [ ] La calificación promedio y la cantidad de reseñas se actualizan al publicar.
 
 ---
@@ -519,17 +521,17 @@ flowchart LR
 - **Actor principal:** Cuidador
 - **Referencia al scope:** no estaba en el scope original; decisión de producto
 - **Descripción:** Tras finalizar el servicio, el cuidador califica y reseña al paciente/familia, igual que ellos lo califican a él. La reputación del paciente es información útil para el cuidador al evaluar futuras solicitudes.
-- **Precondiciones:** Servicio finalizado con ese paciente.
+- **Precondiciones:** Servicio **completado** con ese paciente (razón terminal `completed`, igual que UC-17).
 - **Flujo principal:**
-  1. El cuidador abre la contratación finalizada.
+  1. El cuidador abre la contratación completada.
   2. Ingresa calificación y reseña del paciente/familia.
   3. El sistema guarda la reseña y recalcula la reputación del paciente.
   4. La reputación del paciente se muestra al cuidador en el detalle de nuevas solicitudes (UC-10).
 - **Flujos alternativos / excepciones:**
-  - A1. Mismas restricciones que UC-17: solo con servicio finalizado, una reseña por servicio.
+  - A1. Mismas restricciones que UC-17: solo con servicio completado, una reseña por servicio.
 - **Postcondiciones:** Reputación del paciente actualizada.
 - **Criterios de aceptación:**
-  - [ ] Solo cuidadores con servicio finalizado con ese paciente pueden reseñarlo.
+  - [ ] Solo cuidadores con servicio **completado** con ese paciente pueden reseñarlo.
   - [ ] La reputación del paciente es visible para el cuidador en el detalle de la solicitud (UC-10).
   - [ ] Cada parte reseña a la otra en forma independiente (una reseña no requiere la otra).
 
@@ -602,7 +604,7 @@ flowchart LR
 | **Certificación** | tipo (enfermería, auxiliar, RCP, geriátrico…), institución, año, estado de verificación | pertenece a Cuidador |
 | **InsigniaVerificación** | nivel: certificaciones verificadas / identidad validada / antecedentes | pertenece a Cuidador |
 | **Favorito** | — | Usuario ↔ Cuidador |
-| **Contratación (Booking)** | paciente, solicitante, cuidador, modalidad (domicilio/hospital), fechas, requerimientos especiales, datos de contacto, estado (pendiente / aceptada / rechazada / en curso / finalizada) | 0..2 Reseñas (una de cada parte); 0..1 Pago *(solo si se incluye el módulo de pagos)* |
+| **Contratación (Booking)** | paciente, solicitante, cuidador, modalidad (domicilio/hospital), fechas, requerimientos especiales, datos de contacto, estado (pendiente / aceptada / rechazada / en curso / completada), razón terminal del cierre (`completed` / `cancelled-by-*` / `no-show` / `end-of-life`), declaración de pago opcional post-cierre (honor-mark) | 0..2 Reseñas (una de cada parte); 0..1 Pago *(solo si se incluye el módulo de pagos)* |
 | **Pago** *(pendiente de decisión)* | monto, tarifa/plan elegido, estado, comprobante, fecha | pertenece a Contratación — solo si se incluye el módulo de pagos |
 | **RegistroSignosVitales** | PA sistólica, PA diastólica, frecuencia cardíaca, temperatura, saturación O₂, glucemia, fecha/hora, autor (cuidador o familiar) | pertenece a Paciente |
 | **RegistroMedicación** | medicamento, dosis, horario, observaciones, fecha/hora, autor (cuidador o familiar) | pertenece a Paciente |
