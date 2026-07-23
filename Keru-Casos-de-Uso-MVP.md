@@ -231,15 +231,19 @@ flowchart LR
 - **Flujo principal:**
   1. El titular ve la lista de sus perfiles de paciente.
   2. Agrega un nuevo perfil (UC-01), edita uno existente o lo selecciona como contexto activo.
-  3. El sistema muestra un selector de perfil visible en las secciones por-paciente (búsqueda, contrataciones, seguimiento).
-  4. Desde la ficha del paciente, abre el **círculo**: la lista de cuentas vinculadas al paciente (nombre y email) con el **rol de su vínculo** (`consent-holder` / `manager` / `viewer`).
+  3. El sistema muestra un **selector de perfil** en el encabezado (visible cuando la cuenta administra más de un perfil), con la **identidad visual de la marca** (avatar/inicial + nombre, no un control nativo del navegador) y operable por teclado. El perfil elegido es el **contexto activo** que gobierna las vistas por-paciente (búsqueda, contrataciones, seguimiento).
+  4. En **"Mis contrataciones"** el titular ve por default las contrataciones **del perfil activo**; cambiar el selector re-filtra la lista al instante. La página ofrece además una opción **visible "Todos los pacientes"** para la vista global (todas las contrataciones de la cuenta) — cada contratación muestra a qué paciente pertenece. Volver a elegir un perfil en el selector devuelve el contexto a ese paciente.
+  5. Desde la ficha del paciente, abre el **círculo**: la lista de cuentas vinculadas al paciente (nombre y email) con el **rol de su vínculo** (`consent-holder` / `manager` / `viewer`).
 - **Flujos alternativos / excepciones:**
   - A1. El titular es también paciente: puede tener su propio perfil ("yo") junto a los de otras personas.
+  - A2. Un solo perfil: no se muestra el selector ni la opción "Todos los pacientes" (no hay ambigüedad de contexto); "Mis contrataciones" muestra las de ese único paciente.
 - **Postcondiciones:** Perfiles disponibles como contexto para el resto de los casos de uso.
 - **Criterios de aceptación:**
   - [ ] Una cuenta puede tener 1..n perfiles de paciente.
   - [ ] Cada contratación, registro clínico, invitación y reseña queda asociado a **un perfil concreto**, nunca a la cuenta en general.
   - [ ] Cambiar de perfil cambia el contexto de búsqueda, contrataciones y seguimiento sin cerrar sesión.
+  - [ ] El selector de perfil respeta la **identidad de la marca** (no es un `<select>` nativo), es **accesible por teclado** y pasa la auditoría axe (WCAG AA).
+  - [ ] **"Mis contrataciones" respeta el perfil activo** por default: cambiar el selector filtra la lista a las contrataciones de ese paciente. Se ofrece una opción **visible "Todos los pacientes"** para la vista global de la cuenta; en esa vista cada contratación indica su paciente.
   - [ ] Cualquier vinculado puede **ver la ficha completa** del paciente (datos de UC-01); la **edición** de la ficha queda reservada a los vínculos `consent-holder` y `manager` (un `viewer` solo lee).
   - [ ] Cualquier vinculado (cualquier rol) puede **ver el círculo** del paciente: por cada cuenta vinculada muestra **nombre visible, email y rol del vínculo**. Quien **no** está vinculado al paciente recibe **403** (no ve ni la existencia del círculo).
   - [ ] Toda edición de la ficha queda **auditada** (quién, cuándo, qué campos) — principio de trazabilidad (constitution §2.3).
