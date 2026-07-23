@@ -106,6 +106,11 @@ En Keru **el documento manda y el código se deriva**. Las fuentes, en orden:
 3. [`addl/docs/architect/residual-design.md`](./addl/docs/architect/residual-design.md) — el
    diseño arquitectónico completo (58 NFRs, componentes, deploys) del que la constitution es
    el condensado.
+4. [`docs/brand/brand-book.md`](./docs/brand/brand-book.md) — la identidad **"abrazo
+   profesional"**: personalidad, paleta, tipografía (Fraunces/Figtree), tono de voz, motion.
+   **Referencia de diseño obligatoria para toda tarea de UI** en la webapp (y futuras
+   superficies): los tokens/estilos se derivan de acá, no se inventan por tarea.
+   Vista rápida: [`docs/brand/preview.html`](./docs/brand/preview.html).
 
 Todo cambio de comportamiento sigue la skill **`keru-feature`** (en `.claude/skills/`):
 leer la constitution → analizar el caso de uso → **documentar el cambio en el UC antes de

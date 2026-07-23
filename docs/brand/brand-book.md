@@ -148,7 +148,7 @@ Reservados a estado: alertas de salud, errores, éxitos, advertencias. Nunca dec
 |---|---|---|---|
 | `danger-600` | `#C23B2E` | `danger-50 #FCEEEC` | Errores, alertas clínicas fuera de rango |
 | `success-600` | `#1B7A55` | `success-50 #E9F6EF` | Éxitos, verificaciones ✓, métricas en rango |
-| `warning-600` | `#9C6414` | `warning-50 #FBF3E2` | Advertencias, pendientes de revisión |
+| `warning-600` | `#935F10` | `warning-50 #FBF3E2` | Advertencias, pendientes de revisión |
 | `info-600` | `#3B69B0` | `info-50 #EDF2FA` | Información neutral del sistema |
 
 Los `-600` están elegidos para dar ≥4.5:1 sobre blanco y sobre su tenue `-50`
