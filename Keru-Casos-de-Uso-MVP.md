@@ -186,18 +186,23 @@ flowchart LR
 #### UC-04 · Iniciar sesión y autenticación por rol
 - **Actor principal:** Paciente, Familiar, Cuidador, Administrador
 - **Referencia al scope:** §3.1
-- **Descripción:** Autenticación básica; la sesión determina el rol y con él las capacidades y vistas disponibles.
+- **Descripción:** Autenticación básica; la sesión determina el rol y con él las capacidades y vistas disponibles. La sesión es **revocable server-side** (NFR-41): cerrar sesión invalida el token al instante, no al expirar. Las operaciones admin sensibles exigen **step-up** (re-confirmación de identidad con token corto, NFR-33) — un guard de rol no alcanza.
 - **Precondiciones:** Cuenta creada (UC-01/02/03).
 - **Flujo principal:**
   1. El usuario ingresa sus credenciales.
-  2. El sistema valida y crea la sesión con el rol correspondiente.
+  2. El sistema valida y crea la sesión con el rol correspondiente; el token emitido lleva **identidad propia (`jti`)** para poder revocarlo.
   3. El sistema muestra la interfaz propia del rol (marketplace y seguimiento para familiar/paciente; agenda y registro de métricas para cuidador; back-office para administrador).
+  4. **Cerrar sesión (logout server-side, NFR-41):** el sistema revoca el token (denylist por `jti` hasta su expiración natural) y las **push subscriptions de la sesión** (la del device que cierra sesión si el cliente la identifica; si no, todas las de la cuenta — la higiene le gana a la comodidad). La campana (UC-18) no se toca: es historial de la cuenta, no de la sesión. El logout queda auditado.
 - **Flujos alternativos / excepciones:**
   - A1. Credenciales inválidas: mensaje de error, sin sesión.
-- **Postcondiciones:** Sesión activa con rol asignado.
+  - A2. **Token revocado:** cualquier request con un token deslistado recibe 401, igual que uno expirado — un token robado deja de valer en cuanto la sesión se cierra.
+  - A3. **Operación sensible sin step-up (NFR-33):** aprobar/rechazar cuidadores (UC-19) y liberar cuarentena (UC-12 A3) exigen, además de la sesión, un **token de step-up**: el usuario re-confirma su password y el sistema emite un token corto (~5 min, claim `step_up`) que acompaña la operación. Sin él: 403 con código `STEP_UP_REQUIRED` (el cliente sabe que debe pedir la re-confirmación, no que le falta permiso). Cada **emisión** y cada **uso** del step-up quedan auditados.
+- **Postcondiciones:** Sesión activa con rol asignado; al cerrar sesión, token y push subscriptions revocados.
 - **Criterios de aceptación:**
   - [ ] Cada endpoint/pantalla valida el rol y el vínculo: un cuidador solo opera sobre pacientes que tiene asignados; un familiar solo sobre pacientes a los que está vinculado.
   - [ ] El familiar puede consultar y también **cargar** datos clínicos de sus pacientes vinculados (UC-12, UC-13, UC-20).
+  - [ ] **Logout revoca server-side:** tras cerrar sesión, el mismo token recibe 401 en cualquier endpoint protegido (NFR-41), y las push subscriptions de la sesión quedan revocadas (device notificado ≠ sesión viva).
+  - [ ] **Step-up en operaciones sensibles:** aprobar/rechazar cuidador y liberar cuarentena sin token de step-up → 403 `STEP_UP_REQUIRED`; con re-confirmación de password válida (token corto, claim `step_up`) → proceden; emisión y uso auditados (NFR-33).
 
 ---
 
@@ -388,7 +393,7 @@ flowchart LR
   - A2. Valor fuera del rango aplicable: se dispara la alerta a los familiares (UC-18). El rango aplicable se resuelve en la **versión de rango vigente al tiempo de medición** (`measuredAt`), eligiendo el **estrato etario** del paciente si existe uno más específico (NFR-17); la alerta persiste **qué versión de rango aplicó** (NFR-28), para que "por qué disparó / no disparó a esa hora" siempre tenga respuesta.
   - A3. **Llegada tardía no autorizada → cuarentena (NFR-30).** La autoridad se evalúa al **tiempo de medición** (`measuredAt`), no al de llegada. Si quien registra es un cuidador con relación de cuidado con el paciente (alguna asignación, vigente o histórica) pero **ninguna asignación cubre el tiempo de medición** (p. ej. sincronización tardía después del fin del turno), el registro **no se descarta ni se rechaza en silencio**: el sistema persiste el intento completo (valores, tiempo de medición, autor con rol) en **cuarentena**, se lo comunica a quien registró y notifica al círculo del paciente (UC-18).
     - El círculo del paciente ve los items en cuarentena. **Resuelven** el consent-holder o un manager del vínculo (UC-03); los viewers solo los ven.
-    - **Aprobar**: el registro entra al historial (UC-14) con su **tiempo de medición original** (NFR-36) y su autor original; si corresponde, se evalúan las alertas (A2) al ingresar.
+    - **Aprobar**: el registro entra al historial (UC-14) con su **tiempo de medición original** (NFR-36) y su autor original; si corresponde, se evalúan las alertas (A2) al ingresar. Liberar cuarentena es una **operación sensible**: exige re-confirmación **step-up** (UC-04 A3, NFR-33) — mete en el historial clínico un dato que la autorización normal rechazó, así que pide una segunda confirmación de identidad.
     - **Descartar**: el item queda marcado como descartado — nunca se borra (trazabilidad).
     - Ambas resoluciones quedan auditadas: quién resolvió, cuándo y qué decidió.
   - A4. Quien registra no tiene **ninguna** relación con el paciente (ni vínculo ni asignación alguna): se rechaza (403). No es una llegada tardía; no entra en cuarentena.
@@ -603,6 +608,7 @@ flowchart LR
   - [ ] Los tres niveles de verificación son independientes entre sí.
   - [ ] El cambio de insignias se refleja de inmediato en el marketplace.
   - [ ] Queda registro de quién aprobó/verificó y cuándo (trazabilidad interna).
+  - [ ] **Aprobar y rechazar exigen step-up (NFR-33):** además del rol admin, la operación lleva un token corto de re-confirmación de password (UC-04 A3); sin él → 403 `STEP_UP_REQUIRED`. La emisión y cada uso del step-up quedan auditados.
 
 ---
 
