@@ -4,7 +4,7 @@
 >
 > **Fuentes de verdad.** Producto → `Keru-Casos-de-Uso-MVP.md`. Arquitectura → `addl/docs/architect/residual-design.md` (58 NFRs, componentes IDesign, deploys). Este documento **condensa** ambas en reglas ejecutables; ante conflicto, mandan las fuentes.
 >
-> **Última actualización:** 2026-07-23.
+> **Última actualización:** 2026-07-24.
 
 ---
 
@@ -27,10 +27,10 @@ Keru es un marketplace de cuidadores que conecta pacientes y familias con cuidad
 5. **Aprobación previa de cuidadores.** Ninguna cuenta de cuidador es visible en el marketplace ni puede recibir solicitudes sin aprobación previa del administrador (UC-19).
 6. **Reputación bidireccional.** Familia↔cuidador se califican mutuamente; una reseña no requiere la otra (en el MVP; ver NFR de reveal simultáneo en §5).
 7. **Alertas obligatorias con campana.** Toda alerta queda **siempre** en el centro de notificaciones in-app; el push es adicional, nunca el único registro. La campana es la garantía.
-8. **Una cuenta, varios pacientes.** Una cuenta administra 1..n perfiles de paciente; toda operación se hace en el contexto de **un perfil concreto**, nunca de la cuenta en general.
+8. **Una cuenta, varios pacientes.** Una cuenta administra 1..n perfiles de paciente; toda operación se hace en el contexto de **un perfil concreto**, nunca de la cuenta en general. **Quién administra (KER-50):** registrar y administrar perfiles de paciente es una **capacidad del rol de cuenta `family`** — materializa §2.4 (rol **Y** vínculo): el rol de cuenta gobierna *quién* administra pacientes, el vínculo *sobre cuál*. Una cuenta gana un vínculo con un paciente en **dos** puntos —registrarlo (UC-01) o aceptar una invitación (UC-03)— y ambos exigen rol `family` (`RolesGuard`); de ahí el invariante **"solo cuentas `family` tienen vínculo con un paciente"**. `caregiver`/`admin` que intenten registrar o unirse al círculo → 403.
 9. **Deep links de invitación.** El link de invitación abre la app si está instalada o la web si no, con la misma confirmación (UC-03).
 10. **Datos de salud sensibles.** Privacidad por diseño: cifrado en tránsito y reposo, mínimos privilegios, residencia de datos clínicos in-country.
-11. **Identidad con una sola fuente de verdad (`addl/docs/adr/ADR-0003`).** El **nombre y el avatar** de la *persona detrás de un login* tienen su **fuente canónica en la `Account`**; un perfil de dominio que representa a **esa misma persona** (Cuidador) **no duplica** nombre/foto — los **deriva** de su cuenta. Un perfil que representa a **alguien que puede no tener login** (Paciente) es él mismo la fuente única de su identidad y es **legítimamente distinto** de la cuenta que lo administra (§2.8). No hay campos de identidad duplicados que puedan divergir: editar el nombre/foto en un lugar se ve en todos. *(Abierto — KER-50: si una cuenta rol `'patient'` se vincula a un perfil "sí mismo" compartiendo identidad, o los pacientes son siempre perfiles-sin-login; hasta decidirlo rige el status quo.)*
+11. **Identidad con una sola fuente de verdad (`addl/docs/adr/ADR-0003`).** El **nombre y el avatar** de la *persona detrás de un login* tienen su **fuente canónica en la `Account`**; un perfil de dominio que representa a **esa misma persona** (Cuidador) **no duplica** nombre/foto — los **deriva** de su cuenta. Un perfil que representa a **alguien que puede no tener login** (Paciente) es él mismo la fuente única de su identidad y es **legítimamente distinto** de la cuenta que lo administra (§2.8). No hay campos de identidad duplicados que puedan divergir: editar el nombre/foto en un lugar se ve en todos. *(KER-50 cerró la parte de **authz/rol**: administrar pacientes es capacidad de `family` y el rol `'patient'` salió del self-signup, §2.8/§7. Sigue **abierto** solo si en el futuro se introduce un login-de-paciente que **comparta identidad** con un perfil "sí mismo"; hasta entonces los pacientes son perfiles-sin-login.)*
 
 ---
 
@@ -173,7 +173,7 @@ Registradas para no olvidarlas; ninguna bloquea el MVP (los contratos están par
 - **DV-12:** qué es una "zona" fuera de CABA — no definido; aislado dentro de `ZoneAccess`.
 - **UC-17:** ¿segunda reseña sobre el mismo servicio edita o se prohíbe? El residual la hace inmutable (una sola vez).
 - **UC-02 A3:** cambio de **credenciales** (certificaciones/especialidades) de un cuidador **aprobado** — ¿dispara re-verificación, y de qué tipo (solo la credencial nueva o todo el perfil)? Hasta decidirlo, un perfil aprobado no puede editarlas; solo edita disponibilidad, tarifas (efectivo-fechadas), zona y modalidades. **Acotado por ADR-0003:** **nombre y foto salieron de esta lista** — no son credenciales verificadas (la insignia de identidad NFR-19 es un artefacto separado); la identidad del cuidador se deriva de su cuenta y se edita libremente por `PATCH /accounts/me` (UC-23), sin re-verificación.
-- **Paciente ↔ cuenta (ADR-0003, cruza KER-50):** ¿una cuenta con rol `'patient'` se **vincula** a un perfil de paciente "sí mismo" compartiendo identidad, o los pacientes son **siempre** perfiles-sin-login (y el rol `'patient'` del signup se revisa)? Sin decidir; hasta entonces la identidad del paciente vive en `Patient`, el rol `'patient'` no auto-crea perfil, y **KER-50** es dueño de la revisión.
+- **Paciente ↔ cuenta (ADR-0003, ~~cruza KER-50~~ resuelto en parte por KER-50):** **KER-50 resolvió** la revisión de authz/rol: administrar/registrar perfiles de paciente es capacidad del rol **`family`** (§2.8), el círculo se compone solo de cuentas `family`, y el rol **`'patient'` salió del self-signup** (queda en `AccountRole` reservado para un eventual login-de-paciente). Quien cuida de sí mismo se registra como `family` y crea su propia ficha. **Sigue abierto** únicamente si más adelante se introduce un **login-de-paciente** que **comparta identidad** (nombre/avatar) con un perfil de paciente "sí mismo" — decisión de producto no forzada por el MVP; hasta entonces los pacientes son perfiles-sin-login y su identidad vive en `Patient`.
 
 ---
 

@@ -98,10 +98,11 @@ flowchart LR
 ---
 
 #### UC-01 · Registrar paciente
-- **Actor principal:** Familiar o Paciente
+- **Actor principal:** Familiar (titular de una cuenta que administra perfiles de paciente)
 - **Referencia al scope:** §3.1
-- **Descripción:** Dar de alta la ficha (perfil) del paciente con sus datos personales y clínicos básicos. Una misma cuenta puede dar de alta **varios perfiles de paciente** (UC-22) — p. ej. la madre y el padre.
-- **Precondiciones:** Ninguna (o usuario autenticado si la ficha la crea una cuenta ya registrada).
+- **Descripción:** Dar de alta la ficha (perfil) del paciente con sus datos personales y clínicos básicos. Una misma cuenta puede dar de alta **varios perfiles de paciente** (UC-22) — p. ej. la madre y el padre — o **el suyo propio** si quien cuida es el propio paciente (se registra como `family` y crea su ficha, §2.8).
+- **Autorización (KER-50 · rol de cuenta, no solo vínculo):** registrar un perfil de paciente es una **capacidad del rol de cuenta `family`**. Una cuenta `caregiver`, `admin` (o el rol `patient`, hoy fuera del self-signup — ver UC-04) que intente `POST /patients` recibe **403** (`RolesGuard`, patrón UC-19/NFR-33). Esto materializa §2.4 (acceso por rol **Y** vínculo): el rol de cuenta gobierna **quién administra** perfiles de paciente; el vínculo gobierna **sobre cuál**. El creador queda vinculado como `consent-holder`. *(Antes de KER-50, `POST /patients` estaba protegido solo por sesión: cualquier cuenta autenticada — incl. `patient`/`caregiver` — podía crear perfiles ilimitados, incoherente con el modelo de roles.)*
+- **Precondiciones:** Usuario autenticado con rol de cuenta `family`.
 - **Flujo principal:**
   1. El usuario ingresa los datos personales: nombre, edad, fecha de nacimiento y foto.
   2. Ingresa la condición principal a asistir.
@@ -118,6 +119,7 @@ flowchart LR
   - [ ] La edad puede derivarse de la fecha de nacimiento (evitar inconsistencia entre ambas).
   - [ ] La ficha queda disponible para los flujos de contratación (UC-09) y seguimiento (UC-14).
   - [ ] Una cuenta puede crear y administrar más de un perfil de paciente (UC-22).
+  - [ ] **Solo una cuenta de rol `family` puede registrar un perfil de paciente** (KER-50): `caregiver`/`admin` → **403**; el `patient` ya no llega por el self-signup (UC-04). El creador queda vinculado como `consent-holder`.
 
 ---
 
@@ -171,12 +173,14 @@ flowchart LR
   - A3. El invitado no confirma (cierra o rechaza): no se crea ningún vínculo.
   - A4. **Listar invitaciones emitidas:** cualquier vinculado al paciente ve, desde la ficha/modal de invitar, las invitaciones emitidas con invitado, rol a otorgar, estado (`pending`/`accepted`/`revoked`) y vencimiento. Quien no está vinculado recibe 403.
   - A5. **Revocar una invitación:** el **emisor** de la invitación o un vinculado **`consent-holder`** puede revocar una invitación **pendiente** (con confirmación previa en la UI). Queda en estado `revoked`, el link deja de ser válido (la previsualización la muestra inválida y la confirmación falla) y la acción queda **auditada**. Otro vinculado (p. ej. un `viewer` o un `manager` que no la emitió) recibe 403. Una invitación ya **aceptada** no puede revocarse (el vínculo creado se gestiona desde el círculo); re-revocar una ya revocada no cambia nada.
+  - A6. **Confirmar exige rol de cuenta `family` (KER-50):** el círculo de un paciente se compone de cuentas `family` (el actor de este UC es el "Familiar invitado"). Al confirmar, una cuenta de rol `caregiver`/`admin` recibe **403** aunque la invitación sea válida — administrar/acompañar a un paciente por vínculo es una capacidad `family`, coherente con UC-01. Junto con UC-01, esto mantiene el invariante **"solo cuentas `family` tienen vínculo con un paciente"**: el vínculo se gana únicamente registrando (UC-01) o aceptando una invitación (este UC), y ambos puntos exigen rol `family`.
 - **Postcondiciones:** El familiar queda vinculado al paciente: puede buscar/contratar cuidadores para él, consultar su estado y cargar datos clínicos.
 - **Criterios de aceptación:**
   - [ ] El código/link de invitación es único y está asociado a un paciente concreto.
   - [ ] El sistema envía el link por email al invitado (mejor esfuerzo, no bloquea la emisión); la UI ofrece igualmente copiar/compartir el link. El email usa la **plantilla HTML de marca** (logo con alt, CTA destacado) y es **multipart** (HTML + texto plano de respaldo con el mismo link) — KER-55.
   - [ ] El link funciona como deep link: abre la app si está instalada y la web si no (misma confirmación en ambos casos).
   - [ ] Si el invitado no está registrado, tras crear su usuario el vínculo se establece sin pasos adicionales.
+  - [ ] **Confirmar una invitación exige rol de cuenta `family` (KER-50):** una cuenta `caregiver`/`admin` que confirme recibe **403**; el círculo del paciente se compone solo de cuentas `family`.
   - [ ] Un paciente puede tener uno o más familiares vinculados.
   - [ ] El familiar solo accede a datos de pacientes a los que está vinculado.
   - [ ] Cualquier vinculado puede **listar** las invitaciones emitidas del paciente con estado y vencimiento; quien no está vinculado recibe 403.
@@ -190,7 +194,7 @@ flowchart LR
 #### UC-04 · Iniciar sesión y autenticación por rol
 - **Actor principal:** Paciente, Familiar, Cuidador, Administrador
 - **Referencia al scope:** §3.1
-- **Descripción:** Autenticación básica; la sesión determina el rol y con él las capacidades y vistas disponibles. La sesión es **revocable server-side** (NFR-41): cerrar sesión invalida el token al instante, no al expirar. Las operaciones admin sensibles exigen **step-up** (re-confirmación de identidad con token corto, NFR-33) — un guard de rol no alcanza. Si el usuario **olvida su contraseña**, la recupera con un flujo de **reset por email** (token de un solo uso y corta vida, patrón NFR-19) que, al confirmarse, **revoca todas las sesiones vigentes de la cuenta** (A4). Las cuentas creadas por **auto-registro desde la plataforma** (self-signup, `POST /auth/signup`) arrancan con el **email sin verificar**: el sistema envía un link de verificación (token de un solo uso y corta vida) y, hasta confirmarlo, la cuenta opera con un **banner persistente** y no puede **emitir invitaciones de vínculo** (UC-03) — el gate mínimo elegido para una app con datos clínicos, sin un muro duro al onboarding (A5).
+- **Descripción:** Autenticación básica; la sesión determina el rol y con él las capacidades y vistas disponibles. **El self-signup ofrece dos roles (KER-50):** `family` (administra perfiles de paciente — suyos propios o de un ser querido — busca y contrata cuidadores, carga y consulta datos clínicos) y `caregiver` (profesional del marketplace). El rol `admin` es interno (no se auto-registra). El rol `patient` **queda fuera del self-signup**: si una cuenta-paciente con login propio se vincula a un perfil "sí mismo" compartiendo identidad es una **decisión abierta** (ADR-0003 §7); hasta resolverla, quien cuida de sí mismo se registra como `family` y crea su propia ficha (§2.8) — no hay un rol de cuenta que pueda registrar perfiles ajenos sin ser `family`. La sesión es **revocable server-side** (NFR-41): cerrar sesión invalida el token al instante, no al expirar. Las operaciones admin sensibles exigen **step-up** (re-confirmación de identidad con token corto, NFR-33) — un guard de rol no alcanza. Si el usuario **olvida su contraseña**, la recupera con un flujo de **reset por email** (token de un solo uso y corta vida, patrón NFR-19) que, al confirmarse, **revoca todas las sesiones vigentes de la cuenta** (A4). Las cuentas creadas por **auto-registro desde la plataforma** (self-signup, `POST /auth/signup`) arrancan con el **email sin verificar**: el sistema envía un link de verificación (token de un solo uso y corta vida) y, hasta confirmarlo, la cuenta opera con un **banner persistente** y no puede **emitir invitaciones de vínculo** (UC-03) — el gate mínimo elegido para una app con datos clínicos, sin un muro duro al onboarding (A5).
 - **Precondiciones:** Cuenta creada (UC-01/02/03).
 - **Flujo principal:**
   1. El usuario ingresa sus credenciales.
@@ -212,6 +216,7 @@ flowchart LR
 - **Postcondiciones:** Sesión activa con rol asignado; al cerrar sesión, token y push subscriptions revocados. Tras un reset de contraseña: la contraseña queda actualizada, el token de reset consumido, y **toda sesión previa de la cuenta revocada** (sus tokens reciben 401). Tras verificar el email (A5): la cuenta queda con `emailVerified=true`, el token de verificación consumido y el gate de invitaciones habilitado.
 - **Criterios de aceptación:**
   - [ ] Cada endpoint/pantalla valida el rol y el vínculo: un cuidador solo opera sobre pacientes que tiene asignados; un familiar solo sobre pacientes a los que está vinculado.
+  - [ ] **Self-signup solo acepta `family` o `caregiver` (KER-50):** `POST /auth/signup` con `role: 'patient'` (o `'admin'`) es **rechazado por validación (400)**; el selector de rol de la webapp ofrece únicamente Familiar y Cuidador.
   - [ ] El familiar puede consultar y también **cargar** datos clínicos de sus pacientes vinculados (UC-12, UC-13, UC-20).
   - [ ] **Logout revoca server-side:** tras cerrar sesión, el mismo token recibe 401 en cualquier endpoint protegido (NFR-41), y las push subscriptions de la sesión quedan revocadas (device notificado ≠ sesión viva).
   - [ ] **Step-up en operaciones sensibles:** aprobar/rechazar cuidador y liberar cuarentena sin token de step-up → 403 `STEP_UP_REQUIRED`; con re-confirmación de password válida (token corto, claim `step_up`) → proceden; emisión y uso auditados (NFR-33).
@@ -243,9 +248,9 @@ flowchart LR
 ---
 
 #### UC-22 · Gestionar perfiles de paciente de una cuenta *(agregado por decisión de producto)*
-- **Actor principal:** Titular de la cuenta (paciente o familiar)
+- **Actor principal:** Titular de una cuenta de rol `family` (KER-50: administrar perfiles de paciente es capacidad de `family`)
 - **Referencia al scope:** no estaba en el scope original; decisión de producto
-- **Descripción:** Una misma cuenta puede administrar **varios perfiles de paciente**. Ejemplo: una persona da de alta a su madre y a su padre como pacientes y contrata cuidadores para cada uno. Toda operación sobre un paciente (búsqueda, contratación, carga de datos, seguimiento, invitaciones) se hace **en el contexto de un perfil seleccionado**.
+- **Descripción:** Una misma cuenta `family` puede administrar **varios perfiles de paciente** — propios o de un ser querido. Ejemplo: una persona da de alta a su madre y a su padre como pacientes y contrata cuidadores para cada uno. Toda operación sobre un paciente (búsqueda, contratación, carga de datos, seguimiento, invitaciones) se hace **en el contexto de un perfil seleccionado**. El **círculo** de un paciente (cuentas vinculadas por `PatientLink`) se compone únicamente de cuentas `family`: el vínculo se gana registrando el perfil (UC-01) o aceptando una invitación (UC-03), y ambos exigen rol `family` — invariante **"solo cuentas `family` tienen vínculo con un paciente"**.
 - **Precondiciones:** Cuenta registrada.
 - **Flujo principal:**
   1. El titular ve la lista de sus perfiles de paciente.
@@ -670,8 +675,8 @@ flowchart LR
 
 | Entidad | Atributos clave | Relaciones |
 |---|---|---|
-| **Usuario (Cuenta)** | credenciales, **email verificado (`emailVerified`; el self-signup arranca en `false` hasta confirmar el link, UC-04 A5)**, rol (paciente / familiar / cuidador / admin), **identidad canónica: nombre visible + foto (avatar)** — fuente única de la identidad de la persona detrás del login (ADR-0003) | 1..n Perfiles de Paciente administrados (UC-22, para cuentas paciente/familiar); 0..1 Perfil de Cuidador que **deriva** de ella su nombre/foto |
-| **Paciente (perfil)** | nombre, edad, fecha de nacimiento, foto, condición principal, grupo sanguíneo, alergias, contacto de emergencia, reputación (reseñas de cuidadores) — **la identidad (nombre/foto) vive acá, fuente única** (ADR-0003: perfil-sin-login, distinto de la cuenta que lo administra) | administrado por 1..n cuentas vía vínculo (`PatientLink`); 0..n Asignaciones (vigentes e históricas); 0..n Reseñas recibidas. *(Vínculo cuenta rol `'patient'`↔perfil: decisión abierta, KER-50)* |
+| **Usuario (Cuenta)** | credenciales, **email verificado (`emailVerified`; el self-signup arranca en `false` hasta confirmar el link, UC-04 A5)**, rol (familiar / cuidador / admin; `patient` fuera del self-signup, KER-50/ADR-0003 §7), **identidad canónica: nombre visible + foto (avatar)** — fuente única de la identidad de la persona detrás del login (ADR-0003) | 1..n Perfiles de Paciente administrados (UC-22, **solo cuentas `family`**, KER-50); 0..1 Perfil de Cuidador que **deriva** de ella su nombre/foto |
+| **Paciente (perfil)** | nombre, edad, fecha de nacimiento, foto, condición principal, grupo sanguíneo, alergias, contacto de emergencia, reputación (reseñas de cuidadores) — **la identidad (nombre/foto) vive acá, fuente única** (ADR-0003: perfil-sin-login, distinto de la cuenta que lo administra) | administrado por 1..n cuentas **`family`** vía vínculo (`PatientLink`); 0..n Asignaciones (vigentes e históricas); 0..n Reseñas recibidas. *(KER-50: solo cuentas `family` se vinculan a un perfil. Vínculo de una cuenta rol `'patient'` con login propio a un perfil "sí mismo": decisión abierta, ADR-0003 §7.)* |
 | **Familiar** | datos personales | n..n Pacientes (vínculo con permiso de lectura y carga, creado por invitación) |
 | **InvitaciónFamiliar** | código/link único, paciente, emisor, estado (pendiente / aceptada / vencida), fecha | Paciente → Familiar invitado |
 | **Cuidador** | **estado de cuenta (pendiente / aprobada / rechazada)**, especialidades, experiencia, disponibilidad horaria, tarifas/planes (**efectivo-fechadas**: la vigente + historial de versiones con fecha de vigencia, UC-02 A3), zona, modalidades. **Nombre y foto NO viven acá: se derivan de su `Account`** (ADR-0003, identidad fuente única) | pertenece a una `Account` (1:1 por `accountId`, de la que deriva su identidad); 1..n Certificaciones; 0..n Insignias; 0..n Reseñas recibidas; 0..n VersionesDeTarifa |
