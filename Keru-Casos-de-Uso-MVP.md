@@ -112,6 +112,7 @@ flowchart LR
   - A1. Datos obligatorios faltantes o inválidos (p. ej. fecha de nacimiento futura): el sistema señala los campos y no persiste.
   - A2. La foto es opcional; la ficha puede crearse sin ella.
 - **Postcondiciones:** Existe una ficha de paciente consultable y asociable a familiares y cuidadores. Quien crea la ficha queda vinculado al paciente.
+- **Identidad del paciente (ADR-0003):** el nombre y la foto del paciente viven en la **ficha** (`Patient`), que es su **fuente única** — un paciente es un **perfil administrado, no necesariamente un login**, y su identidad es **distinta** de la de la cuenta que lo administra (§2.8: administro a mi madre; el avatar del header es el mío, el de la ficha es el de ella). *(Decisión abierta — ADR-0003, KER-50: si una cuenta rol `'patient'` se vincula a un perfil "sí mismo" compartiendo identidad. Hasta decidirlo, la identidad vive solo en la ficha.)*
 - **Criterios de aceptación:**
   - [ ] La ficha guarda: nombre, edad, fecha de nacimiento, foto, condición principal, grupo sanguíneo, alergias y contacto de emergencia.
   - [ ] La edad puede derivarse de la fecha de nacimiento (evitar inconsistencia entre ambas).
@@ -123,7 +124,7 @@ flowchart LR
 #### UC-02 · Registrar cuidador (y mantener el perfil aprobado)
 - **Actor principal:** Cuidador
 - **Referencia al scope:** §3.1, §3.2 + decisión de producto (aprobación previa del admin)
-- **Descripción:** Alta del perfil profesional del cuidador. La cuenta nueva queda **pendiente de verificación** y no es visible en el marketplace hasta que el administrador la apruebe (UC-19). Una vez aprobado, el cuidador **mantiene su perfil al día** (foto, disponibilidad, tarifas, zona, modalidades) sin volver a pasar por aprobación (A3).
+- **Descripción:** Alta del perfil profesional del cuidador. La cuenta nueva queda **pendiente de verificación** y no es visible en el marketplace hasta que el administrador la apruebe (UC-19). Una vez aprobado, el cuidador **mantiene su perfil al día** (disponibilidad, tarifas, zona, modalidades) sin volver a pasar por aprobación (A3). **Identidad (nombre + foto) — fuente única en la cuenta (ADR-0003):** el perfil de cuidador **no guarda** nombre ni foto propios; los **deriva** de su `Account`. El marketplace/ficha muestran la misma identidad que el header. El nombre/foto se gestionan en "Mi perfil" (UC-23); el alta del perfil **no** vuelve a pedir el nombre (usa el de la cuenta) y una foto subida al registrarse se guarda en la cuenta.
 - **Precondiciones:** Ninguna.
 - **Flujo principal:**
   1. El cuidador crea su cuenta e ingresa datos personales, **incluida una foto de perfil opcional** (se muestra en las cards de búsqueda, UC-06).
@@ -136,7 +137,7 @@ flowchart LR
 - **Flujos alternativos / excepciones:**
   - A1. Certificaciones sin institución o año: el sistema exige completar ambos campos.
   - A2. **Re-postulación tras rechazo:** un cuidador con perfil **rechazado** puede corregir sus datos y re-enviar la postulación; el perfil vuelve a estado **pendiente**, se limpia el motivo de rechazo, las certificaciones vuelven a "no verificada" y entra de nuevo a la cola de revisión del administrador (UC-19).
-  - A3. **Edición del perfil aprobado (NFR-03/23):** un cuidador **aprobado** actualiza **foto, disponibilidad, tarifas, zona y modalidades** sin pasar por re-aprobación: el perfil sigue aprobado y visible en el marketplace durante y después del cambio. Las tarifas son **efectivo-fechadas**: cada cambio agrega una nueva versión con su fecha de vigencia al historial de tarifas — **ninguna versión pasada se reescribe**. El marketplace (UC-06/07) muestra la tarifa **vigente**; las solicitudes ya emitidas conservan la tarifa **pinneada** al momento de solicitar (UC-09, NFR-03/23) y la aceptación se evalúa contra esos términos. **Nombre, especialidades y certificaciones no se editan por esta vía**: son parte de lo revisado al aprobar (UC-19); un cambio de credenciales exige re-verificación, cuyo proceso es una **decisión de producto pendiente** (constitution §7) — hasta que se decida, el cuidador aprobado no puede modificarlos. Toda edición queda auditada (quién, cuándo, qué campos).
+  - A3. **Edición del perfil aprobado (NFR-03/23):** un cuidador **aprobado** actualiza **disponibilidad, tarifas, zona y modalidades** sin pasar por re-aprobación: el perfil sigue aprobado y visible en el marketplace durante y después del cambio. Las tarifas son **efectivo-fechadas**: cada cambio agrega una nueva versión con su fecha de vigencia al historial de tarifas — **ninguna versión pasada se reescribe**. El marketplace (UC-06/07) muestra la tarifa **vigente**; las solicitudes ya emitidas conservan la tarifa **pinneada** al momento de solicitar (UC-09, NFR-03/23) y la aceptación se evalúa contra esos términos. **Especialidades y certificaciones no se editan por esta vía**: son parte de lo revisado al aprobar (UC-19); un cambio de credenciales exige re-verificación, cuyo proceso es una **decisión de producto pendiente** (constitution §7). **Nombre y foto NO son de esta vía porque no viven en el perfil (ADR-0003):** son la identidad de la **cuenta** (`Account`), fuente única — se editan en **"Mi perfil"** (`PATCH /accounts/me`, UC-23) y el cambio se refleja al instante en el header **y** en las cards/ficha del marketplace (misma identidad, sin duplicación). Toda edición queda auditada (quién, cuándo, qué campos).
 - **Postcondiciones:** Perfil creado en estado pendiente; recién al ser aprobado por el administrador (UC-19) aparece en los resultados de búsqueda (UC-06) y puede recibir solicitudes (UC-09).
 - **Criterios de aceptación:**
   - [ ] El perfil registra especialidades, certificaciones (con institución y año), disponibilidad horaria, tarifas, zona y modalidad.
@@ -144,9 +145,10 @@ flowchart LR
   - [ ] El cuidador puede ver el estado de su cuenta (pendiente / aprobada / rechazada).
   - [ ] Las certificaciones nacen en estado "no verificada" hasta que el proceso interno las verifique (UC-19).
   - [ ] La re-postulación solo es posible desde el estado **rechazado** (un perfil aprobado o desactivado no se re-envía por esta vía); cada re-envío queda auditado.
-  - [ ] Un cuidador **aprobado** edita foto, disponibilidad, tarifas, zona y modalidades **sin re-aprobación** (el perfil sigue aprobado y visible); la edición solo está disponible para el dueño del perfil y solo en estado aprobado (pendiente/rechazado usan el alta o la re-postulación A2).
+  - [ ] Un cuidador **aprobado** edita disponibilidad, tarifas, zona y modalidades **sin re-aprobación** (el perfil sigue aprobado y visible); la edición solo está disponible para el dueño del perfil y solo en estado aprobado (pendiente/rechazado usan el alta o la re-postulación A2).
   - [ ] La tarifa es **efectivo-fechada** (NFR-03/23): cada cambio agrega una versión al historial con su fecha de vigencia; ninguna versión pasada se reescribe, y las solicitudes existentes conservan la tarifa pinneada al crearlas mientras el marketplace muestra la vigente.
-  - [ ] Nombre, especialidades y certificaciones **no** son editables con el perfil aprobado (el cambio de credenciales requiere re-verificación — decisión de producto pendiente, constitution §7); toda edición queda auditada.
+  - [ ] **Identidad unificada (ADR-0003):** el nombre y la foto que muestra el marketplace/ficha son los de la **cuenta** (fuente única); editarlos en "Mi perfil" (UC-23) se refleja al instante en el header y en el marketplace. El perfil de cuidador no tiene nombre/foto propios que puedan divergir.
+  - [ ] Especialidades y certificaciones **no** son editables con el perfil aprobado (el cambio de credenciales requiere re-verificación — decisión de producto pendiente, constitution §7); toda edición queda auditada. **Nombre/foto salen de esa restricción** (ADR-0003): se editan por la cuenta sin re-verificación.
 
 ---
 
@@ -283,6 +285,8 @@ flowchart LR
   - [ ] La página nueva respeta el **brand book** y mantiene **accesibilidad AA** (auditoría axe verde).
 
 > **Nota de dominio (Membership):** el perfil de la cuenta se expone con `GET /accounts/me` (datos propios: id, email, name, photoUrl, role) y se edita con `PATCH /accounts/me` (name?, photoUrl?). El **dueño único de escritura** de la cuenta es **Membership** (`MembershipManager` → `AccountAccess`); la mutación respeta las Call Rules y valida `photoUrl` contra el patrón de `/files/images`. `PATCH` es naturalmente idempotente (fija el estado del nombre/foto): sigue el criterio de NFR-34/ADR-0002 (los verbos idempotentes no requieren *operation-identity*).
+>
+> **Fuente única de identidad (ADR-0003):** para una cuenta de **cuidador**, el nombre y la foto de "Mi perfil" **son** los que muestra el marketplace/ficha — el perfil de cuidador no tiene identidad propia, la **deriva** de la cuenta. Por eso `PATCH /accounts/me` es el **único** punto de escritura de la identidad de un cuidador, y editarla se refleja en el header **y** en las cards del marketplace por construcción. Para una cuenta de **paciente/familiar**, la identidad de "Mi perfil" es la de **la persona que administra** — distinta de la ficha del **paciente** (UC-01), que es la persona cuidada (a menudo otra persona). *(¿Una cuenta rol `'patient'` comparte identidad con un perfil de paciente "sí mismo"? Decisión abierta — ADR-0003, KER-50.)*
 
 ---
 
@@ -656,11 +660,11 @@ flowchart LR
 
 | Entidad | Atributos clave | Relaciones |
 |---|---|---|
-| **Usuario (Cuenta)** | credenciales, rol (paciente / familiar / cuidador / admin) | 1..n Perfiles de Paciente administrados (UC-22, para cuentas paciente/familiar) |
-| **Paciente (perfil)** | nombre, edad, fecha de nacimiento, foto, condición principal, grupo sanguíneo, alergias, contacto de emergencia, reputación (reseñas de cuidadores) | pertenece a una Cuenta titular; 1..n Familiares; 0..n Asignaciones (vigentes e históricas); 0..n Reseñas recibidas |
+| **Usuario (Cuenta)** | credenciales, rol (paciente / familiar / cuidador / admin), **identidad canónica: nombre visible + foto (avatar)** — fuente única de la identidad de la persona detrás del login (ADR-0003) | 1..n Perfiles de Paciente administrados (UC-22, para cuentas paciente/familiar); 0..1 Perfil de Cuidador que **deriva** de ella su nombre/foto |
+| **Paciente (perfil)** | nombre, edad, fecha de nacimiento, foto, condición principal, grupo sanguíneo, alergias, contacto de emergencia, reputación (reseñas de cuidadores) — **la identidad (nombre/foto) vive acá, fuente única** (ADR-0003: perfil-sin-login, distinto de la cuenta que lo administra) | administrado por 1..n cuentas vía vínculo (`PatientLink`); 0..n Asignaciones (vigentes e históricas); 0..n Reseñas recibidas. *(Vínculo cuenta rol `'patient'`↔perfil: decisión abierta, KER-50)* |
 | **Familiar** | datos personales | n..n Pacientes (vínculo con permiso de lectura y carga, creado por invitación) |
 | **InvitaciónFamiliar** | código/link único, paciente, emisor, estado (pendiente / aceptada / vencida), fecha | Paciente → Familiar invitado |
-| **Cuidador** | **estado de cuenta (pendiente / aprobada / rechazada)**, especialidades, experiencia, disponibilidad horaria, tarifas/planes (**efectivo-fechadas**: la vigente + historial de versiones con fecha de vigencia, UC-02 A3), zona, modalidades | 1..n Certificaciones; 0..n Insignias; 0..n Reseñas recibidas; 0..n VersionesDeTarifa |
+| **Cuidador** | **estado de cuenta (pendiente / aprobada / rechazada)**, especialidades, experiencia, disponibilidad horaria, tarifas/planes (**efectivo-fechadas**: la vigente + historial de versiones con fecha de vigencia, UC-02 A3), zona, modalidades. **Nombre y foto NO viven acá: se derivan de su `Account`** (ADR-0003, identidad fuente única) | pertenece a una `Account` (1:1 por `accountId`, de la que deriva su identidad); 1..n Certificaciones; 0..n Insignias; 0..n Reseñas recibidas; 0..n VersionesDeTarifa |
 | **Certificación** | tipo (enfermería, auxiliar, RCP, geriátrico…), institución, año, estado de verificación | pertenece a Cuidador |
 | **InsigniaVerificación** | nivel: certificaciones verificadas / identidad validada / antecedentes | pertenece a Cuidador |
 | **Favorito** | — | Usuario ↔ Cuidador |
