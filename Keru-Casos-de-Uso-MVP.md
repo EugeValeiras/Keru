@@ -657,7 +657,7 @@ flowchart LR
   2. El cuidador o un familiar registra un signo vital (UC-12) o una novedad (UC-20).
   3. El sistema evalúa el valor contra la **versión de rango aplicable** — el estrato etario del paciente si existe, vigente al tiempo de medición — y registra qué versión aplicó (NFR-17/28); o detecta la novedad.
   4. El sistema genera la alerta y la deposita **siempre** en el centro de notificaciones (campana) de cada familiar vinculado, con contador de no leídas. El fan-out es **idempotente por destinatario**: una misma alerta nunca produce dos notificaciones para el mismo destinatario (NFR-27).
-  5. Si el familiar aceptó el permiso, además recibe la notificación push.
+  5. Si el familiar aceptó el permiso, además recibe la notificación push. **Refetch-por-push (ADR-0004 Fase 1, KER-78):** al recibir el push, el service worker avisa a las pestañas abiertas y la app **refetchea el contador de no leídas al instante**, sin esperar el ciclo de polling — así el badge refleja el evento en ~1 s (NFR-42). El polling de la campana permanece como **piso garantizado** (NFR-09): mientras el push está activo se relaja a un intervalo largo (fallback), y si no hay permiso de push o el navegador no soporta service worker, sigue funcionando degradado con su intervalo corto. No se introduce SSE ni WebSocket: se reusa el canal Web Push existente.
   6. El sistema registra el **outcome de entrega por destinatario y canal** (NFR-26): la campana queda `delivered` al persistir la notificación; el push registra el resultado real del envío (`delivered` / `failed`), nunca "aceptado por el proveedor" como entregado. Entregada ≠ vista (NFR-11).
   7. El familiar abre la notificación (push o campana) y aterriza en la vista del paciente (UC-14). Marcarla como leída registra el **acuse** (NFR-11).
 - **Flujos alternativos / excepciones:**
@@ -671,6 +671,7 @@ flowchart LR
   - [ ] Se notifica a todos los familiares vinculados al paciente.
   - [ ] Toda alerta queda en el centro de notificaciones aunque el push esté deshabilitado; el push es adicional, nunca el único registro.
   - [ ] La campana muestra el contador de notificaciones no leídas.
+  - [ ] **Refetch-por-push (ADR-0004 Fase 1):** al llegar un Web Push, el badge refetchea el contador de inmediato (sin esperar el polling); el polling permanece como piso (NFR-09) y sigue funcionando degradado si no hay permiso de push o service worker.
   - [ ] El receptor puede marcar una notificación como leída o **todas de una vez**; ambas operaciones son idempotentes.
   - [ ] Cada notificación persiste su outcome de entrega por canal (campana: `delivered` al persistir; push: resultado real del envío) — entregada ≠ vista (NFR-11/26).
   - [ ] Una alerta crítica sin acuse de nadie del círculo dentro del umbral se re-notifica al círculo y registra la escalación (NFR-11).
