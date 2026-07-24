@@ -562,12 +562,14 @@ flowchart LR
 - **Flujos alternativos / excepciones:**
   - A1. Un cuidador histórico ya no está activo en la plataforma: se muestra en el historial pero sin opción de recontratar.
   - A2. **Recontratación urgente (rehire, NFR-15/23):** ante una cancelación o no-show (UC-09 A3/A4), el solicitante puede **re-contratar directo a un cuidador que ya atendió al paciente**, sin pasar por la búsqueda completa (UC-06): emite una re-solicitud dirigida (mismo ciclo de UC-09/10). La nueva solicitud **re-pinnea la tarifa vigente** del cuidador (NFR-03/21) y la respuesta muestra el **diff mínimo de tarifa**: la vigente que se pinnea vs la de la última contratación previa (NFR-23), para decidir con los términos a la vista. Si el cuidador nunca atendió al paciente, la vía urgente no aplica (se usa UC-09 normal).
-- **Postcondiciones:** Ninguna (consulta); puede derivar en una recontratación (UC-09) o en un rehire urgente (A2).
+  - A3. **Reseña ya enviada — mostrar mi calificación en vez de “Calificar cuidador” (KER-39, feedback de usuario).** En el listado de contrataciones del solicitante, cada servicio **completado** ofrece el atajo a calificar al cuidador (UC-17). Si el viewer **ya dejó su reseña** sobre ese servicio, el listado muestra **su propia calificación** (puntaje + comentario) en lugar del botón — respeta el invariante **una reseña por servicio y parte** (UC-17/UC-21, NFR-21: sellada e inmutable) y evita ofrecer una acción que sería rechazada. El autor **siempre ve su propia reseña**, incluso mientras esté sellada a la espera de la contraparte (NFR-21 sella la reseña *de la contraparte*, nunca la propia). Al recién calificar, la card se refresca y pasa del botón a la reseña. La misma información es **bidireccional** por API (ver criterio): el cuidador también ve *su* reseña sobre el paciente en su listado de solicitudes (UC-21).
+- **Postcondiciones:** Ninguna (consulta); puede derivar en una recontratación (UC-09), un rehire urgente (A2) o en calificar al cuidador (UC-17, A3).
 - **Criterios de aceptación:**
   - [ ] Se muestran todos los cuidadores con asignación vigente y todos los históricos, con sus períodos de servicio.
   - [ ] Desde el historial se accede al **perfil actual** del cuidador y se puede iniciar una recontratación (UC-09).
   - [ ] El paciente y el familiar tienen acceso a esta vista.
   - [ ] El **rehire urgente** (A2) solo aplica a cuidadores con asignación previa (vigente o histórica) con ese paciente; re-pinnea la tarifa vigente y la respuesta incluye tarifa anterior vs vigente.
+  - [ ] **(KER-39)** En un servicio completado, si el viewer ya reseñó, el listado muestra **su calificación** (con su reseña propia visible aun sellada) en lugar del botón “Calificar cuidador”; si no reseñó aún, ofrece el botón. El listado de solicitudes expone por servicio la reseña propia del viewer (`myReview`) — presente **solo** en los completados, y **bidireccional** (el solicitante ve su reseña del cuidador; el cuidador, la suya del paciente).
 
 ---
 
@@ -581,7 +583,7 @@ flowchart LR
 - **Descripción:** Tras el servicio, el familiar/paciente califica al cuidador; las reseñas alimentan la reputación visible en el marketplace.
 - **Precondiciones:** Servicio contratado y **completado** con ese cuidador (razón terminal `completed`; la declaración de pago no influye — NFR-20, Decouple row 49).
 - **Flujo principal:**
-  1. El usuario abre la contratación completada.
+  1. El usuario abre la contratación completada (desde el listado de UC-16: si **aún no reseñó**, ve el atajo “Calificar cuidador”; si **ya reseñó**, ve su propia calificación en su lugar — UC-16 A3, KER-39).
   2. Ingresa una calificación (puntaje) y una reseña (comentario).
   3. El sistema guarda la reseña asociada al servicio y recalcula la reputación del cuidador (promedio y cantidad).
   4. La reseña queda visible en el perfil (UC-07) y la reputación en el listado (UC-06).
