@@ -253,7 +253,7 @@ async function main() {
     THROTTLE_SKIP: 'true',
     VAPID_PUBLIC_KEY: vapid.publicKey,
     VAPID_PRIVATE_KEY: vapid.privateKey,
-    VAPID_SUBJECT: 'mailto:no-reply@keru.app',
+    VAPID_SUBJECT: 'mailto:no-reply@keru.ar',
   };
 
   // 1) Levantar el stack aislado (api arrastra postgres + redis + floci por depends_on).
@@ -287,7 +287,7 @@ async function main() {
     DB_HOST: 'localhost', DB_PORT: String(pgPort), DB_USER: 'keru', DB_PASSWORD: 'keru', DB_NAME: 'keru',
     REDIS_HOST: 'localhost', REDIS_PORT: String(redisPort),
     AWS_REGION: 'us-east-1', AWS_ENDPOINT_URL: `http://localhost:${flociPort}`,
-    SES_FROM: 'no-reply@keru.app', S3_BUCKET: 'keru-media', S3_PUBLIC_URL: '/media',
+    SES_FROM: 'no-reply@keru.ar', S3_BUCKET: 'keru-media', S3_PUBLIC_URL: '/media',
     JWT_SECRET: 'dev-secret-change-me', JWT_EXPIRES: '7d',
     THROTTLE_SKIP: 'true',
     APP_BASE_URL: `http://127.0.0.1:${apiPort}`,
