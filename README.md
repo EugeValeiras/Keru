@@ -93,6 +93,23 @@ docker compose --profile app down            # baja todo (o npm run app:down)
 
 ---
 
+## Verificación aislada por tarea
+
+Cada tarea, al verificarse, levanta su **propio** stack en Docker con **puertos efímeros**
+(`docker compose -p keru-<tarea>`) y corre las suites contra él, sin pisar a otras tareas ni a
+los servers de dev. Habilita **N verificaciones en paralelo** sin colisión de nombres ni
+puertos, y hace **teardown siempre** (adiós "servers zombie" y falsos rojos). El
+`verifyCommand` del Kanban (`npm test`) delega en este harness.
+
+```bash
+node scripts/verify-isolated.mjs --full   # unit + api-e2e + Playwright, aislado
+node scripts/verify-isolated.mjs --gate   # lo que corre el gate de Kanban (unit + api-e2e)
+```
+
+Detalle, flags, wiring y demo de 2-en-paralelo: [`docs/testing/verificacion-aislada.md`](./docs/testing/verificacion-aislada.md).
+
+---
+
 ## Flujo docs-first
 
 En Keru **el documento manda y el código se deriva**. Las fuentes, en orden:

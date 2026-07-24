@@ -294,3 +294,43 @@ clínica innecesaria.
 - La comparación visual v1 → v2 (paleta, tipografía, logo, botones y card de cuidador)
   vive en [`preview.html`](./preview.html): un solo archivo, sin dependencias externas
   (fuentes embebidas en base64), se abre directo en el navegador.
+
+---
+
+## 9. Emails transaccionales (KER-55)
+
+Los emails que manda Keru (invitación de vínculo UC-03, recuperación de contraseña UC-04 A4,
+verificación de email UC-04 A5) usan una **plantilla HTML de marca** en vez de texto plano.
+
+### Dónde vive
+
+- **Plantilla:** `Keru-API/libs/core/src/email/email.templates.ts` — `renderBrandedEmail(content)`
+  devuelve `{ html, text }` a partir de un mismo contenido (preheader, título, párrafos, CTA,
+  notas y motivo). `EmailUtility` (`email.util.ts`) arma el `content` de cada email y envía
+  **multipart** (parte HTML + parte texto plano) por SES. Es una **Utility** (constitution §3.1):
+  el branding es **mejor esfuerzo**, no bloquea al que llama ni cambia la firma de los métodos.
+- **Muestras para inspección visual:** `Keru-API/docs/email-samples/*.html` (regenerables con
+  `WRITE_EMAIL_SAMPLES=1 npx jest email.samples`).
+
+### Origen del logo
+
+El wordmark se **embebe como data-URI SVG** con `alt="keru"` (el asset exacto de
+[`assets/keru-logo.svg`](./assets/keru-logo.svg), minificado dentro del código). No depende de
+la webapp corriendo ni de hosting de assets. **Límite conocido:** Gmail y Outlook bloquean las
+imágenes `data:` (cualquier formato), así que ahí el logo cae al **texto `alt` "keru"**; la
+identidad la sostienen igual el color de marca, la tipografía y el CTA, que sí renderizan en
+todos los clientes. Apple Mail / iOS Mail / Thunderbird muestran el SVG. *Follow-up opcional:*
+si se quiere el logo pixel-perfect también en Gmail, reemplazar el data-URI por un **PNG en una
+URL pública estable** de assets.
+
+### Reglas de compatibilidad de clientes de correo
+
+- Estilos **100% inline** (no `<style>` ni CSS externo — Gmail/Outlook los descartan).
+- Layout con **tablas**, ancho ~600px, sin JS.
+- **Preheader** (preview text) oculto al inicio del cuerpo.
+- **Contraste AA:** CTA violeta `primary-600` con texto blanco; cuerpo en `ink-700`; el logo
+  lleva `alt`. Tipografía con fallbacks web-safe (Georgia por Fraunces en el título; Arial/Helvetica
+  por Figtree en el cuerpo).
+- Botón CTA **"bulletproof"** con fallback VML para el motor Word de Outlook.
+- **Multipart siempre:** parte texto plano de respaldo con el mismo link/token (accesibilidad y
+  deliverability).
