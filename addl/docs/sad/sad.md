@@ -2929,6 +2929,8 @@ Significant decisions that are too large or contested to fit in a single SAD cel
 |---|---|---|---|
 | [ADR-0001](../adr/ADR-0001-stack-y-topologia-monolito-modular.md) | Stack técnico y topología de deploy: monolito modular (1 deploy) — incluye la excepción a Topology rows 60-63 (NFR-46..49) y la señal medible de split | Accepted (retroactive, 2026-07-23) | §Technical Considerations -- Development technology; §Deployment Unit Boundaries; `constitution.md §3/§4` |
 | [ADR-0002](../adr/ADR-0002-alcance-nfr-34-operation-identity.md) | Alcance de NFR-34: operation-identity solo en efectos no-idempotentes (relajación registrada del residual) | Accepted (retroactive, 2026-07-23) | `residual-design.md` NFR-34; `constitution.md §5` | 
+| [ADR-0003](../adr/ADR-0003-modelo-de-identidad-fuente-unica.md) | Modelo de identidad: una sola fuente de verdad de nombre/avatar entre la cuenta y su perfil de dominio | Accepted (2026-07-23) | `constitution.md §2/§3.3/§7`; `Keru-Casos-de-Uso-MVP.md` UC-01/02/22/23 y §5 |
+| [ADR-0004](../adr/ADR-0004-canal-de-notificaciones-refetch-por-push-ahora-sse-diferido.md) | Canal de notificaciones: refetch-por-push ahora (absorbido), SSE diferido (needs-architecture), WebSocket reservado | Proposed (2026-07-24) | `constitution.md §2.7/NFR-09/NFR-41/NFR-42`; `ADR-0001`; KER-73 |
 
 ### Audit Status
 
