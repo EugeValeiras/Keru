@@ -52,7 +52,7 @@ El sistema se descompone en **5 dominios** (= los 5 "Manager services" del dise�
 - **Engine** → cálculo puro, *sin estado*. El "cómo" (`MatchingEngine`, `AlertEngine`, `PermissionEngine`).
 - **ResourceAccess** → verbos atómicos sobre datos. *Sin estado*.
 - **Resource** → la base/infra (Postgres, read model, proveedores externos).
-- **Utility** → transversal (`PubSubUtility` sobre outbox, `AuditUtility`).
+- **Utility** → transversal (`PubSubUtility` sobre outbox, `AuditUtility`, `EmailUtility`). El envío de email (invitación UC-03, reset/verificación UC-04) es **best-effort**: un fallo no bloquea ni invalida el workflow que lo dispara. Pero best-effort **no es silencioso** (KER-66): todo fallo de envío se loguea a **ERROR** con detalle accionable (tipo, destinatario enmascarado, error+stack), nunca se traga en un `warn`. Rutear el email por el outbox (retry/DLQ, KER-33) es un follow-up abierto, no el estado actual.
 
 ### 3.2 Reglas de llamada (Call Rules) — arquitectura cerrada
 - ✅ Client → Manager (única puerta de entrada).
