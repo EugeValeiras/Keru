@@ -516,19 +516,21 @@ flowchart LR
 ---
 
 #### UC-14 · Consultar estado e historial del paciente
-- **Actor principal:** Familiar
+- **Actor principal:** Familiar **o Cuidador con servicio vivo**
 - **Referencia al scope:** §3.4 — **modificado por decisión de producto**: el familiar no es de solo lectura; también carga datos (UC-12/13/20)
 - **Descripción:** Vista del estado del paciente con el historial de signos vitales, medicación y novedades, accesible desde cualquier lugar.
-- **Precondiciones:** Familiar vinculado al paciente (UC-03).
+- **Precondiciones:** Familiar vinculado al paciente (UC-03), **o cuidador con una asignación viva** con el paciente (servicio aceptado y no cerrado, UC-05/UC-10).
 - **Flujo principal:**
-  1. El familiar abre la vista del paciente.
+  1. El familiar (o el cuidador) abre la vista del paciente.
   2. El sistema muestra el estado actual (últimas mediciones) y el historial cronológico de signos vitales, medicación y novedades, cada registro con fecha/hora y autor (cuidador o familiar).
 - **Flujos alternativos / excepciones:**
-  - A1. Usuario no vinculado al paciente: acceso denegado.
+  - A1. Usuario no vinculado ni con servicio vivo con el paciente: acceso denegado (403 "Sin acceso a este paciente").
+  - A2. **Alcance de la lectura del cuidador — VIDA del servicio, no la ventana (KER-57, constitution §3.7).** La lectura clínica del cuidador se habilita mientras su asignación esté **viva** (estado `active`: aceptada y aún no cerrada a `historical`), **sin** exigir que el momento caiga dentro de la ventana `periodStart..periodEnd`. Así, un servicio **aceptado con inicio futuro** o **en curso** deja leer el estado (para prepararse/atender); cuando el servicio **vence o se cierra** (barrido NFR-14 → `historical`, o cierre UC-09 A3/A4), la lectura se corta y un acceso posterior da 403. Esto **difiere** deliberadamente del alcance de la **ESCRITURA** clínica (UC-12/13/20), que sí se ata a la **ventana** al tiempo de medición y pone en **cuarentena** las llegadas fuera de ventana (NFR-30): mirar no es medir. El cliente (webapp) refleja esta separación — ofrece las acciones de lectura (Ver estado, Historial) durante la vida del servicio y las de escritura solo dentro de la ventana, para no presentar nunca un botón que la API garantiza rechazar.
 - **Postcondiciones:** Ninguna (consulta).
 - **Criterios de aceptación:**
   - [ ] Desde esta vista el familiar también puede iniciar la carga de datos (UC-12, UC-13, UC-20).
   - [ ] Un registro cargado por el cuidador o por otro familiar aparece en la vista sin demoras perceptibles (seguimiento "en tiempo real" según §1).
+  - [ ] **(KER-57)** El cuidador con una asignación **viva** (aceptada, no cerrada) lee estado e historial aunque el momento esté fuera de la ventana del servicio (inicio futuro / en curso); al cerrarse o vencer la asignación, la lectura se deniega (403). La **escritura** sigue acotada a la ventana con cuarentena (NFR-30), sin cambios.
   - [ ] Funciona igual en móvil y web.
 
 ---
