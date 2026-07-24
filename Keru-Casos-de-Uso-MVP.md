@@ -706,6 +706,7 @@ flowchart LR
   - [ ] **Documento privado descargable solo por admin (KER-52):** el adjunto de cada certificación se descarga por un endpoint autorizado **solo admin** (otros → 403), **nunca** por URL pública; cada descarga queda **auditada**.
   - [ ] El cambio de insignias se refleja de inmediato en el marketplace.
   - [ ] Queda registro de quién aprobó/verificó/rechazó (por-cert) y cuándo (trazabilidad interna).
+  - [ ] **Minimización de datos (KER-81):** los DTOs de respuesta del back-office de cuidadores **no exponen el `accountId` interno** del cuidador (ni el detalle `GET /admin/caregivers/:id`, ni el listado paginado `GET /admin/caregivers`, ni las respuestas de aprobar/rechazar certificación). El admin opera siempre por el **`id` del cuidador** (aprobar/rechazar, descargar documentos), así que correlacionar el perfil con su `Account` Keru subyacente es innecesario para el flujo y viola §2 (minimización). Si en el futuro alguna acción del front necesitara navegar a la cuenta, se re-expondría **solo en el detalle** y documentado acá.
   - [ ] **Aprobar y rechazar (cuenta y certificaciones) exigen step-up (NFR-33):** además del rol admin, la operación lleva un token corto de re-confirmación de password (UC-04 A3); sin él → 403 `STEP_UP_REQUIRED`. La emisión y cada uso del step-up quedan auditados. *(La **descarga** del documento exige rol admin + auditoría, no step-up: es lectura para revisar, la decisión mutante que sí exige step-up es aprobar/rechazar.)*
 
 ---
