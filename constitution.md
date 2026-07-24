@@ -30,6 +30,7 @@ Keru es un marketplace de cuidadores que conecta pacientes y familias con cuidad
 8. **Una cuenta, varios pacientes.** Una cuenta administra 1..n perfiles de paciente; toda operación se hace en el contexto de **un perfil concreto**, nunca de la cuenta en general.
 9. **Deep links de invitación.** El link de invitación abre la app si está instalada o la web si no, con la misma confirmación (UC-03).
 10. **Datos de salud sensibles.** Privacidad por diseño: cifrado en tránsito y reposo, mínimos privilegios, residencia de datos clínicos in-country.
+11. **Identidad con una sola fuente de verdad (`addl/docs/adr/ADR-0003`).** El **nombre y el avatar** de la *persona detrás de un login* tienen su **fuente canónica en la `Account`**; un perfil de dominio que representa a **esa misma persona** (Cuidador) **no duplica** nombre/foto — los **deriva** de su cuenta. Un perfil que representa a **alguien que puede no tener login** (Paciente) es él mismo la fuente única de su identidad y es **legítimamente distinto** de la cuenta que lo administra (§2.8). No hay campos de identidad duplicados que puedan divergir: editar el nombre/foto en un lugar se ve en todos. *(Abierto — KER-50: si una cuenta rol `'patient'` se vincula a un perfil "sí mismo" compartiendo identidad, o los pacientes son siempre perfiles-sin-login; hasta decidirlo rige el status quo.)*
 
 ---
 
@@ -65,6 +66,8 @@ El sistema se descompone en **5 dominios** (= los 5 "Manager services" del dise�
 
 ### 3.3 Dueño único de escritura
 Solo **Membership** escribe vínculos/roles; solo **Hiring** escribe asignaciones; solo **Reputation** escribe reseñas; solo **CareRecord** escribe registros clínicos/rangos/alertas. Los demás leen por réplica de solo-lectura.
+
+**Identidad (nombre/avatar) — dueño y punto de escritura único (ADR-0003).** Membership es dueño de la identidad. La identidad de la **cuenta** (`Account.displayName`/`photoUrl`) se escribe **solo** por `PATCH /accounts/me` (UC-23). El **perfil de cuidador no tiene columnas de identidad propias**: las **deriva** de su `Account` por `accountId` (resolución **intra-Membership**, no viola §3.5). Por eso el único punto de escritura del nombre/foto de un cuidador es también `PATCH /accounts/me`. La identidad del **paciente** vive en `Patient` y la escribe Membership por la ficha (UC-01/UC-22). Hiring lee el cuidador **ya enriquecido** por `CaregiverAccess` (réplica de solo-lectura) — nunca joina `account`.
 
 ### 3.4 Acceso a datos — REGLA NO-NEGOCIABLE (disciplina Löwy / IDesign)
 **Todo acceso a la base de datos se hace ÚNICAMENTE a través de un ResourceAccess.** Ningún Manager, Engine ni Controller puede:
@@ -169,7 +172,8 @@ Registradas para no olvidarlas; ninguna bloquea el MVP (los contratos están par
 - **UC-09:** modelo de período de servicio (fijo / recurrente / open-ended) — decisión de producto; el residual usa transiciones timer-driven.
 - **DV-12:** qué es una "zona" fuera de CABA — no definido; aislado dentro de `ZoneAccess`.
 - **UC-17:** ¿segunda reseña sobre el mismo servicio edita o se prohíbe? El residual la hace inmutable (una sola vez).
-- **UC-02 A3:** cambio de **credenciales** (certificaciones/especialidades/nombre) de un cuidador **aprobado** — ¿dispara re-verificación, y de qué tipo (solo la credencial nueva o todo el perfil)? Hasta decidirlo, un perfil aprobado no puede editarlas; solo edita foto, disponibilidad, tarifas (efectivo-fechadas), zona y modalidades.
+- **UC-02 A3:** cambio de **credenciales** (certificaciones/especialidades) de un cuidador **aprobado** — ¿dispara re-verificación, y de qué tipo (solo la credencial nueva o todo el perfil)? Hasta decidirlo, un perfil aprobado no puede editarlas; solo edita disponibilidad, tarifas (efectivo-fechadas), zona y modalidades. **Acotado por ADR-0003:** **nombre y foto salieron de esta lista** — no son credenciales verificadas (la insignia de identidad NFR-19 es un artefacto separado); la identidad del cuidador se deriva de su cuenta y se edita libremente por `PATCH /accounts/me` (UC-23), sin re-verificación.
+- **Paciente ↔ cuenta (ADR-0003, cruza KER-50):** ¿una cuenta con rol `'patient'` se **vincula** a un perfil de paciente "sí mismo" compartiendo identidad, o los pacientes son **siempre** perfiles-sin-login (y el rol `'patient'` del signup se revisa)? Sin decidir; hasta entonces la identidad del paciente vive en `Patient`, el rol `'patient'` no auto-crea perfil, y **KER-50** es dueño de la revisión.
 
 ---
 
