@@ -312,16 +312,23 @@ verificación de email UC-04 A5) usan una **plantilla HTML de marca** en vez de 
 - **Muestras para inspección visual:** `Keru-API/docs/email-samples/*.html` (regenerables con
   `WRITE_EMAIL_SAMPLES=1 npx jest email.samples`).
 
-### Origen del logo
+### Origen del logo (KER-64)
 
-El wordmark se **embebe como data-URI SVG** con `alt="keru"` (el asset exacto de
-[`assets/keru-logo.svg`](./assets/keru-logo.svg), minificado dentro del código). No depende de
-la webapp corriendo ni de hosting de assets. **Límite conocido:** Gmail y Outlook bloquean las
-imágenes `data:` (cualquier formato), así que ahí el logo cae al **texto `alt` "keru"**; la
-identidad la sostienen igual el color de marca, la tipografía y el CTA, que sí renderizan en
-todos los clientes. Apple Mail / iOS Mail / Thunderbird muestran el SVG. *Follow-up opcional:*
-si se quiere el logo pixel-perfect también en Gmail, reemplazar el data-URI por un **PNG en una
-URL pública estable** de assets.
+El wordmark se sirve desde una **URL pública HTTPS estable** con `alt="Keru"` — **no** como
+data-URI. Gmail y Outlook **bloquean** las imágenes `data:` (cualquier formato) por seguridad, así
+que con el data-URI el logo caía al **texto `alt`** para la mayoría de los clientes (Gmail+Outlook
+son mayoría); una URL `http(s)` pública sí renderiza en **todos** (incluidos Gmail/Outlook, además
+de Apple Mail / iOS Mail / Thunderbird). Se prefiere **PNG** por compatibilidad de email (algunos
+clientes no rasterizan SVG remoto).
+
+- **Asset canónico:** el mismo trazo que [`assets/keru-logo.svg`](./assets/keru-logo.svg),
+  publicado como **PNG** en el CDN de marca (convención `cdn.keru.app`, la misma de las fotos de
+  paciente). Debe ser una URL estable, HTTPS y **no versionada/caducable**.
+- **Configurable por env:** `EMAIL_LOGO_URL` (`Keru-API/.env.example`), leída por `EmailUtility` y
+  pasada al renderer. **Default:** `DEFAULT_LOGO_URL = https://cdn.keru.app/email/keru-logo.png`
+  (`email.templates.ts`).
+- **Dependencia de infra:** publicar el PNG en esa URL (bucket/CDN público). Hasta que exista, el
+  `<img>` renderiza roto pero el `alt="Keru"`, el color, la tipografía y el CTA sostienen la marca.
 
 ### Reglas de compatibilidad de clientes de correo
 
