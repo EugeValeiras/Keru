@@ -322,13 +322,18 @@ de Apple Mail / iOS Mail / Thunderbird). Se prefiere **PNG** por compatibilidad 
 clientes no rasterizan SVG remoto).
 
 - **Asset canónico:** el mismo trazo que [`assets/keru-logo.svg`](./assets/keru-logo.svg),
-  publicado como **PNG** en el CDN de marca (convención `cdn.keru.app`, la misma de las fotos de
-  paciente). Debe ser una URL estable, HTTPS y **no versionada/caducable**.
+  publicado como **PNG** en el CDN de marca **por ambiente** (KER-70): `cdn.dev.keru.ar` en dev y
+  `cdn.keru.ar` en prod — la **misma convención de host** que las fotos de paciente (`S3_PUBLIC_URL`),
+  para que emails y fotos carguen del mismo dominio por ambiente. Debe ser una URL estable, HTTPS y
+  **no versionada/caducable**.
 - **Configurable por env:** `EMAIL_LOGO_URL` (`Keru-API/.env.example`), leída por `EmailUtility` y
-  pasada al renderer. **Default:** `DEFAULT_LOGO_URL = https://cdn.keru.app/email/keru-logo.png`
-  (`email.templates.ts`).
-- **Dependencia de infra:** publicar el PNG en esa URL (bucket/CDN público). Hasta que exista, el
-  `<img>` renderiza roto pero el `alt="Keru"`, el color, la tipografía y el CTA sostienen la marca.
+  pasada al renderer. **Por ambiente:** dev → `https://cdn.dev.keru.ar/email/keru-logo.png`, prod →
+  `https://cdn.keru.ar/email/keru-logo.png`. **Default del código** (prod):
+  `DEFAULT_LOGO_URL = https://cdn.keru.ar/email/keru-logo.png` (`email.templates.ts`). En local las
+  subidas van a floci, pero el logo es un asset estático público y se sirve del CDN de dev igual.
+- **Dependencia de infra:** publicar el PNG en **ambos** hosts (`cdn.dev.keru.ar/email/` y
+  `cdn.keru.ar/email/`) con el DNS/CDN apuntando al bucket de marca. Hasta que exista, el `<img>`
+  renderiza roto pero el `alt="Keru"`, el color, la tipografía y el CTA sostienen la marca.
 
 ### Reglas de compatibilidad de clientes de correo
 
