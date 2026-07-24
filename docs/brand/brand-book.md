@@ -195,6 +195,10 @@ Fraunces en cuerpo de texto, botones ni formularios. Inter (v1) se retira.
   nunca semánticos salvo que comuniquen estado.
 - **Emojis**: v1 usa emojis como iconos (♥, 🔍). En v2 quedan **solo para contenido**
   (mensajes, celebraciones puntuales); la UI usa iconos del set.
+- **Insignias de certificación (KER-77)**: cada tipo del catálogo tiene su ícono Lucide bundleado
+  inline (`kr-cert-icon`, mapeado por `iconKey`), no un emoji ni un host externo. El emoji del
+  catálogo (`badgeIcon`) queda como fallback text-only (p.ej. en un `<option>`). Atribución del set
+  en [`ATTRIBUTIONS.md`](./ATTRIBUTIONS.md).
 
 ---
 
