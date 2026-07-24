@@ -1,11 +1,21 @@
 # ADR-0004 — Canal de notificaciones: refetch-por-push ahora (absorbido), SSE diferido (needs-architecture), WebSocket reservado
 
-- **Estado:** Propuesto (2026-07-24) — pendiente de aprobación del product owner
+- **Estado:** Aceptado (2026-07-24) — **Fase 1 implementada** (KER-78, 2026-07-24). Fase 2 (SSE) sigue diferida (needs-architecture); WebSocket reservado.
 - **Decisores:** Eugenio Valeiras (product owner) + agente supervisor
 - **Referenciado desde:** `constitution.md §2.7 / NFR-09 (independencia de canal)`, `NFR-42 / OQ-6 (frescura 3-5 s)`, `NFR-41 (logout revoca canal)`, `ADR-0001 (topología monolito + señal de split)`
 - **Documento de evaluación:** `addl/docs/documents/2026-07-24-evaluacion-canal-notificaciones.md`
 - **Back-channel al SAD:** `docs/developer/back-channel/2026-07-24-notification-stream-sse.md`
-- **Tareas:** KER-73 (esta decisión, docs-first). La implementación de Fase 1 va en un ticket siguiente.
+- **Tareas:** KER-73 (esta decisión, docs-first); **KER-78 (implementación de la Fase 1)**.
+
+## Estado de implementación (Fase 1 · KER-78)
+
+Implementada en el front (Keru-Webapp), **sin cambios de contrato en la API** — el payload del Web Push ya incluía el discriminador `type` (`alert | note | quarantine | hiring | alert-resolved`), que el cliente usa tal cual:
+
+- `public/sw.js`: al recibir el `push`, tras `showNotification` hace `clients.matchAll(...).postMessage({ source:'keru-sw', kind:'push', type })` a las pestañas abiertas.
+- `core/notifications/push-refresh.bridge.ts` (nuevo, servicio del shell): escucha el mensaje del SW y dispara `NotificationStore.pushRefresh()` (refetch del unread-count + de la lista si el panel ya la cargó). Idempotente y best-effort; si no hay service worker no registra nada.
+- `core/notifications/notification.store.ts`: polling auto-programado que elige intervalo según `PushStore.active()` — **fallback largo (5 min)** con push activo, **piso corto (45 s)** sin push; degradación graceful (NFR-09) intacta.
+- `core/notifications/push.store.ts`: expone `active` (hay suscripción viva) para gobernar la cadencia.
+- Verificación: `e2e/refetch-por-push.spec.ts` (Playwright) — con push simulado el badge refleja el unread-count sin esperar el polling; sin permiso, el polling/refresh sigue como piso. NFR-41 (revocación en logout) sin cambios.
 
 ## Contexto
 
