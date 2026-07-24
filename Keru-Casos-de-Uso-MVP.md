@@ -130,7 +130,7 @@ flowchart LR
   1. El cuidador crea su cuenta e ingresa datos personales, **incluida una foto de perfil opcional** (se muestra en las cards de búsqueda, UC-06).
   2. Selecciona sus especialidades: cuidado de adultos mayores, post-quirúrgico, enfermedad crónica, discapacidad, paliativos, pediátrico, rehabilitación, acompañamiento.
   3. Carga sus estudios y certificaciones (título de enfermería, auxiliar, RCP, cuidado geriátrico, etc.), cada una con institución y año.
-  4. Define su disponibilidad horaria.
+  4. Define su disponibilidad horaria. **Carga ágil (KER-53):** elige uno o varios días a la vez (chips L→D o presets L-V / fin de semana / todos) y les aplica un mismo rango horario de una; cada rango muestra su **duración calculada** ("08:00–16:00 · 8 h") en vivo. El rango es de **mismo día** (`to` > `from`; cruzar medianoche queda fuera de alcance); un rango inválido se rechaza en el cliente con feedback claro. El contrato `AvailabilityDto {dayOfWeek, from, to}` no cambia: la duración se deriva en la UI.
   5. Define sus tarifas / planes.
   6. Define su zona de trabajo y modalidades que atiende (domicilio u hospital).
   7. El sistema crea el perfil en estado **pendiente de verificación** y lo encola para revisión del administrador (UC-19); el cuidador ve el estado de su solicitud.
