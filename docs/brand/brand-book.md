@@ -154,6 +154,25 @@ Reservados a estado: alertas de salud, errores, éxitos, advertencias. Nunca dec
 Los `-600` están elegidos para dar ≥4.5:1 sobre blanco y sobre su tenue `-50`
 (objetivo WCAG AA 1.4.3; KER-20 lo valida token por token al implementar).
 
+### Dorado de confianza (KER-87)
+
+Único uso decorativo **con significado**: el respaldo profesional verificado (§2). No es un
+semántico de estado clínico ni compite con el violeta de marca — se reserva a las **insignias de
+verificación completada** (certificación aprobada, identidad, antecedentes) para que resalten por
+sobre las especialidades. Se usa como par tenue/texto igual que los semánticos.
+
+| Token | Hex | Uso |
+|---|---|---|
+| `gold-50` | `#FBF3D9` | Fondo de la insignia verificada |
+| `gold-300` | `#E2C574` | Borde/acento de la insignia |
+| `gold-500` | `#B8901F` | Brillo decorativo (shine) |
+| `gold-700` | `#6E5410` | **Texto/ícono de la insignia** — 6.4:1 sobre `gold-50`, 7.2:1 sobre blanco (AA holgado) |
+
+El brillo (barrido de luz sutil) de las insignias verificadas vive **solo** bajo
+`prefers-reduced-motion: no-preference` (motion, §KER-21): con la preferencia activa la insignia
+queda dorada estática y su realce lo dan fondo/texto/borde (el contraste AA **no** depende del
+movimiento). Ojo: no repetir el patrón fino de contraste de KER-72/79 — el texto va en `gold-700`.
+
 ---
 
 ## 4. Tipografía
@@ -199,6 +218,20 @@ Fraunces en cuerpo de texto, botones ni formularios. Inter (v1) se retira.
   inline (`kr-cert-icon`, mapeado por `iconKey`), no un emoji ni un host externo. El emoji del
   catálogo (`badgeIcon`) queda como fallback text-only (p.ej. en un `<option>`). Atribución del set
   en [`ATTRIBUTIONS.md`](./ATTRIBUTIONS.md).
+- **Insignia unificada del cuidador (KER-87)**: una **única** píldora tipográfica para TODO lo que el
+  cuidador exhibe —especialidades (áreas de cuidado), verificaciones agregadas (identidad,
+  antecedentes) y certificaciones del catálogo— renderizada por el componente `kr-insignias` (que
+  consolida lo que antes eran chips dispersos: `kr-badge` de especialidad, badges de verificación y las
+  insignias por-cert de KER-82). Forma canónica: `rounded-tag`, Figtree 500 12px, alto uniforme, ícono
+  opcional (`kr-cert-icon`, decorativo/`aria-hidden`). Tratamientos:
+  - **Especialidad** (neutral, sin ícono): `bg-primary-50` + `text-primary-700`.
+  - **Verificada** (certificación aprobada, identidad, antecedentes): **dorado** (`gold-50`/`gold-700` +
+    borde `gold-300` + brillo sutil; ver §3 "Dorado de confianza"). Resalta por sobre las especialidades.
+  - **Pendiente/rechazada** (solo vista admin): `warning`/`danger` por estado.
+  Cada insignia lleva su `aria-label` (etiqueta + condición, p.ej. "Certificación verificada: Primeros
+  Auxilios"): el estado **no** se comunica solo por color/ícono (AA, WCAG 1.4.1). Se usa el **mismo**
+  componente en el marketplace (card + ficha) y en el admin (listado + detalle). Solo se muestran las
+  insignias que el cuidador tiene; sin ninguna, no se renderiza la fila.
 
 ---
 
