@@ -347,7 +347,7 @@ flowchart LR
      - **Zona / ubicación** del servicio y **modalidad** (domicilio u hospital).
      - **Tipo de enfermedad o cuidado**: adultos mayores, post-quirúrgico, enfermedad crónica, discapacidad, paliativos, pediátrico, rehabilitación, acompañamiento.
      - **Disponibilidad horaria** y **rango de tarifa**.
-  3. El sistema devuelve la lista de cuidadores que cumplen los filtros, mostrando por cada uno: nombre, foto, especialidades, calificación promedio, cantidad de reseñas, insignias de verificación y tarifa.
+  3. El sistema devuelve la lista de cuidadores que cumplen los filtros, mostrando por cada uno: nombre, foto, especialidades, calificación promedio, cantidad de reseñas, **insignias de verificación** (las 3 agregadas: certificaciones/identidad/antecedentes) e **insignias por-certificación** (KER-52/KER-82: cada certificación **aprobada** con su ícono del catálogo — solo las aprobadas, nunca las pendientes/rechazadas) y tarifa.
   4. El usuario abre un perfil (UC-07), lo guarda en favoritos (UC-08) o inicia una contratación (UC-09).
 - **Flujos alternativos / excepciones:**
   - A1. Sin resultados: el sistema lo indica y sugiere relajar filtros.
@@ -356,6 +356,7 @@ flowchart LR
   - [ ] Solo aparecen cuidadores con **cuenta aprobada** por el administrador (UC-19).
   - [ ] Los filtros son combinables (zona + tipo de cuidado + disponibilidad + tarifa + modalidad).
   - [ ] La reputación (calificación y reseñas) y las insignias de verificación son visibles ya desde el listado, porque son criterio de elección.
+  - [ ] **Insignias por-certificación en la card (KER-82):** la card del listado muestra también las certificaciones **aprobadas** del cuidador (ícono del catálogo + etiqueta), en un tratamiento **compacto** (fila de íconos con tooltip/`aria-label`, overflow `+N` si son muchas) que no rompe el layout con muchas ni con cero. Contrato: `CaregiverCardDto` expone `certifications` = `publicCertifications(...)` (**solo aprobadas**, sin la key privada del documento); el detalle (UC-07) ya las mostraba. El render vive en un **componente compartido** (`kr-cert-insignias`) que reusa el ícono SVG de KER-77 (`kr-cert-icon`), sin duplicar lógica de ícono.
   - [ ] La búsqueda opera en el contexto de uno o más perfiles de paciente (UC-22); al contratar para varios pacientes se genera una solicitud por paciente (UC-09).
 
 ---
@@ -705,6 +706,7 @@ flowchart LR
   - [ ] **Aprobación por-certificación (KER-52):** el admin aprueba/rechaza **cada certificación individual**; solo las **aprobadas** aparecen en el marketplace/ficha con su **insignia** del catálogo; las pendientes/rechazadas **no se muestran**.
   - [ ] **Documento privado descargable solo por admin (KER-52):** el adjunto de cada certificación se descarga por un endpoint autorizado **solo admin** (otros → 403), **nunca** por URL pública; cada descarga queda **auditada**.
   - [ ] El cambio de insignias se refleja de inmediato en el marketplace.
+  - [ ] **Insignias por-certificación en el listado de gestión (KER-82):** el listado `GET /admin/caregivers` (`/admin/caregivers`) muestra, además de las 3 insignias de verificación, las **insignias por-certificación** del cuidador. A diferencia del marketplace (solo aprobadas), la vista de gestión muestra **todas con su estado** (`ownerCertifications` → pendiente/verificada/rechazada), tiñendo cada insignia según el estado, porque el admin necesita ver qué falta revisar. El dato ya viaja en el DTO del listado (`CaregiverResponseDto.certifications`); era solo un gap de render. Mismo componente compartido que el marketplace (`kr-cert-insignias`, `showStatus` on), tratamiento compacto (fila + overflow `+N`), cada insignia con `aria-label`/`title` (etiqueta + estado), sin depender solo del color/ícono (AA).
   - [ ] Queda registro de quién aprobó/verificó/rechazó (por-cert) y cuándo (trazabilidad interna).
   - [ ] **Minimización de datos (KER-81):** los DTOs de respuesta del back-office de cuidadores **no exponen el `accountId` interno** del cuidador (ni el detalle `GET /admin/caregivers/:id`, ni el listado paginado `GET /admin/caregivers`, ni las respuestas de aprobar/rechazar certificación). El admin opera siempre por el **`id` del cuidador** (aprobar/rechazar, descargar documentos), así que correlacionar el perfil con su `Account` Keru subyacente es innecesario para el flujo y viola §2 (minimización). Si en el futuro alguna acción del front necesitara navegar a la cuenta, se re-expondría **solo en el detalle** y documentado acá.
   - [ ] **Aprobar y rechazar (cuenta y certificaciones) exigen step-up (NFR-33):** además del rol admin, la operación lleva un token corto de re-confirmación de password (UC-04 A3); sin él → 403 `STEP_UP_REQUIRED`. La emisión y cada uso del step-up quedan auditados. *(La **descarga** del documento exige rol admin + auditoría, no step-up: es lectura para revisar, la decisión mutante que sí exige step-up es aprobar/rechazar.)*
