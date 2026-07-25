@@ -103,6 +103,15 @@ export class MembershipManager {
     return { accessToken, accountId, email, role, displayName };
   }
 
+  /** NFR-33 · Step-up: reingresar la contraseña emite un token de vida corta para acciones sensibles. */
+  async stepUp(accountId: string, password: string): Promise<string> {
+    const account = await this.accountAccess.findAccountById(accountId);
+    if (!account) throw new UnauthorizedException('Sesión inválida');
+    const ok = await bcrypt.compare(password, account.passwordHash);
+    if (!ok) throw new UnauthorizedException('Contraseña incorrecta');
+    return this.jwt.signAsync({ sub: accountId, stepUp: true }, { expiresIn: '5m' });
+  }
+
   /** UC-01 · Registrar paciente. */
   async registerPatient(dto: RegisterPatientDto, actorAccountId: string): Promise<RegisteredPatient> {
     this.assertBirthDateNotFuture(dto.birthDate);

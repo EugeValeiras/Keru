@@ -12,6 +12,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ApiService } from '../../core/api.service';
+import { AuthService } from '../../core/auth.service';
 import { Badges, CaregiverDetail } from '../../core/models';
 
 @Component({
@@ -122,7 +123,14 @@ import { Badges, CaregiverDetail } from '../../core/models';
                   <mat-label>Motivo (opcional)</mat-label>
                   <textarea matInput [(ngModel)]="deactivateReason" rows="2"></textarea>
                 </mat-form-field>
-                <button mat-flat-button color="warn" (click)="deactivate()">Confirmar desactivación</button>
+                <mat-form-field appearance="outline" class="full">
+                  <mat-icon matPrefix>lock</mat-icon>
+                  <mat-label>Confirmá tu contraseña (step-up)</mat-label>
+                  <input matInput type="password" [(ngModel)]="stepUpPassword" />
+                </mat-form-field>
+                <button mat-flat-button color="warn" [disabled]="!stepUpPassword" (click)="deactivate()">
+                  Confirmar desactivación
+                </button>
                 <button mat-button (click)="deactivating.set(false)">Cancelar</button>
               }
             }
@@ -160,6 +168,7 @@ import { Badges, CaregiverDetail } from '../../core/models';
 })
 export class Detail {
   private readonly api = inject(ApiService);
+  private readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly snack = inject(MatSnackBar);
@@ -170,6 +179,7 @@ export class Detail {
   readonly deactivating = signal(false);
   reason = '';
   deactivateReason = '';
+  stepUpPassword = '';
 
   private readonly id = this.route.snapshot.paramMap.get('id')!;
 
@@ -208,11 +218,21 @@ export class Detail {
     });
   }
 
-  deactivate(): void {
-    this.api.deactivate(this.id, this.deactivateReason || undefined).subscribe(() => {
-      this.snack.open('Cuidador desactivado (ripple en curso)', 'Cerrar', { duration: 2500 });
-      this.deactivating.set(false);
-      this.load();
+  async deactivate(): Promise<void> {
+    try {
+      await this.auth.stepUp(this.stepUpPassword); // NFR-33: confirmar identidad
+    } catch {
+      this.snack.open('Contraseña incorrecta', 'Cerrar', { duration: 3000 });
+      return;
+    }
+    this.api.deactivate(this.id, this.deactivateReason || undefined).subscribe({
+      next: () => {
+        this.snack.open('Cuidador desactivado (ripple en curso)', 'Cerrar', { duration: 2500 });
+        this.deactivating.set(false);
+        this.stepUpPassword = '';
+        this.load();
+      },
+      error: () => this.snack.open('No se pudo desactivar (¿step-up expirado?)', 'Cerrar', { duration: 3500 }),
     });
   }
 

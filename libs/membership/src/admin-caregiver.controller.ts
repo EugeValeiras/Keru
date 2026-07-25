@@ -1,6 +1,13 @@
 import { Body, Controller, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
-import { AuthPrincipal, CurrentAccount, JwtAuthGuard, Roles, RolesGuard } from '@keru/core';
+import {
+  AuthPrincipal,
+  CurrentAccount,
+  JwtAuthGuard,
+  Roles,
+  RolesGuard,
+  StepUpGuard,
+} from '@keru/core';
 import { MembershipManager } from './manager/membership.manager';
 import { CaregiverResponseDto } from './manager/dto/caregiver-response.dto';
 import { CaregiverDetailDto } from './manager/dto/caregiver-detail.dto';
@@ -88,8 +95,9 @@ export class AdminCaregiverController {
   }
 
   @Post(':id/deactivate')
+  @UseGuards(StepUpGuard)
   @ApiOperation({
-    summary: 'OQ-8/NFR-31 · Desactivar (ocultar) cuidador; dispara el ripple encolado a Hiring',
+    summary: 'OQ-8/NFR-31 · Desactivar cuidador (requiere step-up); dispara el ripple encolado a Hiring',
   })
   @ApiOkResponse({ type: CaregiverResponseDto })
   async deactivate(

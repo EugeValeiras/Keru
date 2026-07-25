@@ -6,6 +6,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { buildTypeOrmOptions } from './config/database.config';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { RolesGuard } from './auth/roles.guard';
+import { StepUpGuard } from './auth/step-up.guard';
 // NOTA: PermissionEngine y su AuthorityProvider NO se proveen acá — los cablea AuthorizationModule
 // (capa de composición) con el adapter real, para no acoplar core a Membership/Hiring (constitution §3.5).
 import { OutboxEvent } from './outbox/outbox-event.entity';
@@ -48,13 +49,14 @@ import { AuditUtility } from './audit/audit.util';
       }),
     }),
   ],
-  providers: [PubSubUtility, TransactionUtility, AuditUtility, JwtAuthGuard, RolesGuard],
+  providers: [PubSubUtility, TransactionUtility, AuditUtility, JwtAuthGuard, RolesGuard, StepUpGuard],
   exports: [
     PubSubUtility,
     TransactionUtility,
     AuditUtility,
     JwtAuthGuard,
     RolesGuard,
+    StepUpGuard,
     TypeOrmModule,
     BullModule,
     JwtModule,

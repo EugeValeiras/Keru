@@ -21,6 +21,11 @@ export class AuthService {
     this.user.set(null);
   }
 
+  /** NFR-33 · Step-up: reingresar la contraseña para habilitar acciones sensibles (5 min). */
+  async stepUp(password: string): Promise<void> {
+    await firstValueFrom(this.http.post('/bff/auth/step-up', { password }));
+  }
+
   /** Restaura la sesión desde la cookie (para el guard al recargar). */
   async tryRestore(): Promise<boolean> {
     try {

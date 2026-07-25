@@ -11,6 +11,7 @@ async function bootstrap() {
   const cfg = app.get(ConfigService);
   const apiUrl = cfg.get<string>('keruApiUrl')!;
   const cookieName = cfg.get<string>('cookieName')!;
+  const stepUpCookieName = cfg.get<string>('stepUpCookieName')!;
   const webOrigin = cfg.get<string>('webOrigin')!;
   const port = cfg.get<number>('port')!;
 
@@ -28,10 +29,17 @@ async function bootstrap() {
     }
     const target = apiUrl + req.url; // req.url ya viene sin el prefijo /bff/api
     const hasBody = !['GET', 'HEAD', 'DELETE'].includes(req.method);
+    const headers: Record<string, string> = {
+      'content-type': 'application/json',
+      authorization: `Bearer ${token}`,
+    };
+    // NFR-33: si hay una confirmación de identidad reciente, se propaga al backend.
+    const stepUp = req.cookies?.[stepUpCookieName];
+    if (stepUp) headers['x-step-up'] = stepUp;
     try {
       const upstream = await fetch(target, {
         method: req.method,
-        headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
+        headers,
         body: hasBody ? JSON.stringify(req.body ?? {}) : undefined,
       });
       const text = await upstream.text();

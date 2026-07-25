@@ -27,6 +27,14 @@ export class SignupDto {
   displayName!: string;
 }
 
+/** NFR-33 · Step-up: reingreso de contraseña para acciones sensibles. */
+export class StepUpDto {
+  @ApiProperty({ example: 'S3gura!123' })
+  @IsString()
+  @MinLength(1)
+  password!: string;
+}
+
 /** UC-04 · Login. */
 export class LoginDto {
   @ApiProperty({ example: 'familiar@test.com' })

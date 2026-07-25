@@ -29,6 +29,7 @@ export * from './auth/jwt-auth.guard';
 export * from './auth/current-account.decorator';
 export * from './auth/roles.decorator';
 export * from './auth/roles.guard';
+export * from './auth/step-up.guard';
 
 // Errors
 export * from './errors/error-response';

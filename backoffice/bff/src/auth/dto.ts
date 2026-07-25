@@ -8,3 +8,9 @@ export class LoginDto {
   @MinLength(1)
   password!: string;
 }
+
+export class StepUpDto {
+  @IsString()
+  @MinLength(1)
+  password!: string;
+}

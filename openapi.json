@@ -65,6 +65,36 @@
         ]
       }
     },
+    "/api/v1/auth/step-up": {
+      "post": {
+        "operationId": "AuthController_stepUp_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StepUpDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "NFR-33 · Step-up: reingresar contraseña para acciones sensibles",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
     "/api/v1/patients": {
       "post": {
         "description": "Crea el perfil del paciente y vincula al creador como consent-holder. Idempotente por operationId (NFR-34).",
@@ -490,7 +520,7 @@
             "bearer": []
           }
         ],
-        "summary": "OQ-8/NFR-31 · Desactivar (ocultar) cuidador; dispara el ripple encolado a Hiring",
+        "summary": "OQ-8/NFR-31 · Desactivar cuidador (requiere step-up); dispara el ripple encolado a Hiring",
         "tags": [
           "Back-office"
         ]
@@ -2107,6 +2137,18 @@
         },
         "required": [
           "email",
+          "password"
+        ]
+      },
+      "StepUpDto": {
+        "type": "object",
+        "properties": {
+          "password": {
+            "type": "string",
+            "example": "S3gura!123"
+          }
+        },
+        "required": [
           "password"
         ]
       },

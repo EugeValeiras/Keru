@@ -1,7 +1,8 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
-import { ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { AuthPrincipal, CurrentAccount, JwtAuthGuard } from '@keru/core';
 import { MembershipManager } from './manager/membership.manager';
-import { AuthResponseDto, LoginDto, SignupDto } from './manager/dto/auth.dto';
+import { AuthResponseDto, LoginDto, SignupDto, StepUpDto } from './manager/dto/auth.dto';
 
 /** UC-04 · Autenticación. Endpoints públicos (sin guard). */
 @ApiTags('Auth')
@@ -22,5 +23,15 @@ export class AuthController {
   @ApiOkResponse({ type: AuthResponseDto })
   login(@Body() dto: LoginDto): Promise<AuthResponseDto> {
     return this.membership.login(dto);
+  }
+
+  @Post('step-up')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'NFR-33 · Step-up: reingresar contraseña para acciones sensibles' })
+  async stepUp(@Body() dto: StepUpDto, @CurrentAccount() account: AuthPrincipal) {
+    const stepUpToken = await this.membership.stepUp(account.accountId, dto.password);
+    return { stepUpToken };
   }
 }
