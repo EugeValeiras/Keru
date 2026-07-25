@@ -7,6 +7,7 @@ import {
   CaregiverCard,
   CaregiverDetail,
   DashboardMetrics,
+  ModeratedReview,
   Page,
   PlatformRange,
   RangeVersion,
@@ -82,5 +83,20 @@ export class ApiService {
 
   rangeHistory(metricKey: string): Observable<RangeVersion[]> {
     return this.http.get<RangeVersion[]>(`${this.base}/admin/ranges/${metricKey}/history`);
+  }
+
+  // --- Moderación de reseñas (NFR-22) ---
+  reviewsForModeration(page = 1, pageSize = 50): Observable<Page<ModeratedReview>> {
+    return this.http.get<Page<ModeratedReview>>(`${this.base}/admin/reviews`, {
+      params: { page, pageSize },
+    });
+  }
+
+  withholdReview(id: string): Observable<ModeratedReview> {
+    return this.http.post<ModeratedReview>(`${this.base}/admin/reviews/${id}/withhold`, {});
+  }
+
+  publishReview(id: string): Observable<ModeratedReview> {
+    return this.http.post<ModeratedReview>(`${this.base}/admin/reviews/${id}/publish`, {});
   }
 }

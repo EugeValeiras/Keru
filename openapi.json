@@ -1701,6 +1701,101 @@
         ]
       }
     },
+    "/api/v1/admin/reviews": {
+      "get": {
+        "operationId": "AdminReviewController_list_v1",
+        "parameters": [
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Página de reseñas"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "NFR-22 · Reseñas para moderar (publicadas y retenidas)",
+        "tags": [
+          "Moderation"
+        ]
+      }
+    },
+    "/api/v1/admin/reviews/{id}/withhold": {
+      "post": {
+        "operationId": "AdminReviewController_withhold_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "NFR-22 · Retener reseña (oculta del público, preserva el original)",
+        "tags": [
+          "Moderation"
+        ]
+      }
+    },
+    "/api/v1/admin/reviews/{id}/publish": {
+      "post": {
+        "operationId": "AdminReviewController_publish_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "NFR-22 · Republicar reseña retenida",
+        "tags": [
+          "Moderation"
+        ]
+      }
+    },
     "/api/v1/catalogs": {
       "get": {
         "description": "Enumeraciones y catálogo de métricas (con unidad y rangos por defecto) para dropdowns y validación del cliente.",

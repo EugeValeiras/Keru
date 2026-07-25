@@ -29,6 +29,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/ranges/ranges').then((m) => m.Ranges),
       },
       {
+        path: 'moderation',
+        loadComponent: () => import('./features/moderation/moderation').then((m) => m.Moderation),
+      },
+      {
         path: 'audit',
         loadComponent: () => import('./features/audit/audit').then((m) => m.Audit),
       },

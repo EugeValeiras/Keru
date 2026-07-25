@@ -77,6 +77,18 @@ export interface RangeVersion {
   supersededAt: string | null;
 }
 
+export interface ModeratedReview {
+  id: string;
+  requestId: string;
+  subjectType: 'caregiver' | 'patient';
+  subjectId: string;
+  rating: number;
+  comment: string | null;
+  visibility: 'published' | 'withheld';
+  moderatedBy: string | null;
+  createdAt: string;
+}
+
 export interface AuditEntry {
   id: string;
   action: string;

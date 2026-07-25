@@ -47,12 +47,35 @@ export class ReviewAccess {
     await this.reviews.update({ requestId }, { revealed: true });
   }
 
-  /** Reseñas visibles (reveladas) de un sujeto (cuidador o paciente). */
+  /** Reseñas visibles (reveladas Y publicadas) de un sujeto (NFR-22). */
   listRevealedForSubject(subjectType: ReviewSubject, subjectId: string): Promise<Review[]> {
     return this.reviews.find({
-      where: { subjectType, subjectId, revealed: true },
+      where: { subjectType, subjectId, revealed: true, visibility: 'published' },
       order: { createdAt: 'DESC' },
     });
+  }
+
+  findById(id: string): Promise<Review | null> {
+    return this.reviews.findOne({ where: { id } });
+  }
+
+  /** Todas las reseñas reveladas (publicadas y retenidas) para la cola de moderación. */
+  listForModeration(skip: number, take: number): Promise<[Review[], number]> {
+    return this.reviews.findAndCount({
+      where: { revealed: true },
+      order: { createdAt: 'DESC' },
+      skip,
+      take,
+    });
+  }
+
+  /** Moderación (NFR-22): cambia la visibilidad preservando el contenido; audita autor/fecha. */
+  async setVisibility(
+    id: string,
+    visibility: 'published' | 'withheld',
+    moderatedBy: string,
+  ): Promise<void> {
+    await this.reviews.update(id, { visibility, moderatedBy, moderatedAt: new Date() });
   }
 
   /**

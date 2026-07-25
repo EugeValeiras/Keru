@@ -73,6 +73,34 @@ export class ReputationManager {
     };
   }
 
+  // --- NFR-22 · Moderación (back-office) ---
+  async listReviewsForModeration(
+    page: number,
+    pageSize: number,
+  ): Promise<{ items: Review[]; total: number; page: number; pageSize: number }> {
+    const take = Math.min(Math.max(pageSize, 1), 100);
+    const safePage = Math.max(page, 1);
+    const [items, total] = await this.reviewAccess.listForModeration((safePage - 1) * take, take);
+    return { items, total, page: safePage, pageSize: take };
+  }
+
+  /** Retiene o republica una reseña preservando el contenido original (NFR-22). Audita. */
+  async moderateReview(
+    reviewId: string,
+    visibility: 'published' | 'withheld',
+    adminId: string,
+  ): Promise<Review> {
+    const review = await this.reviewAccess.findById(reviewId);
+    if (!review) throw new NotFoundException('Reseña no encontrada');
+    await this.reviewAccess.setVisibility(reviewId, visibility, adminId);
+    await this.audit.record({
+      action: `reputation.review.${visibility === 'withheld' ? 'withheld' : 'published'}`,
+      actor: adminId,
+      target: { type: 'review', id: reviewId },
+    });
+    return (await this.reviewAccess.findById(reviewId))!;
+  }
+
   // --- NFR-21/14 · Barrido de ventana de reveal ---
   /** Revela reseñas selladas cuya ventana cerró (default 14 días). Idempotente. */
   async sweepReviewWindows(now = new Date(), windowDays = 14): Promise<{ revealed: number }> {

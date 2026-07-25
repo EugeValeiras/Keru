@@ -37,6 +37,19 @@ export class Review {
   @Index()
   revealed!: boolean;
 
+  /**
+   * Visibilidad (NFR-22). `withheld` = retenida por moderación: se oculta del público y de los
+   * agregados, PERO el contenido original se preserva (nunca se borra).
+   */
+  @Column({ type: 'varchar', length: 16, default: 'published' })
+  visibility!: 'published' | 'withheld';
+
+  @Column({ type: 'varchar', length: 128, nullable: true })
+  moderatedBy!: string | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  moderatedAt!: Date | null;
+
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt!: Date;
 }

@@ -6,6 +6,7 @@ import { Review } from './resource-access/entities/review.entity';
 import { ReviewAccess } from './resource-access/review.access';
 import { ReputationManager } from './manager/reputation.manager';
 import { ReviewController } from './review.controller';
+import { AdminReviewController } from './admin-review.controller';
 
 /**
  * Dominio Reputation (constitution §3). Reseñas bidireccionales familia↔cuidador. UC-17/21.
@@ -13,7 +14,7 @@ import { ReviewController } from './review.controller';
  */
 @Module({
   imports: [MembershipModule, HiringModule, TypeOrmModule.forFeature([Review])],
-  controllers: [ReviewController],
+  controllers: [ReviewController, AdminReviewController],
   providers: [ReviewAccess, ReputationManager],
   exports: [ReputationManager],
 })
