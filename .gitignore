@@ -28,3 +28,7 @@ yarn-error.log*
 # misc
 *.tsbuildinfo
 .eslintcache
+
+# Repos separados del usuario clonados acá (no forman parte de este repo)
+Keru-API/
+Keru-Webapp/
