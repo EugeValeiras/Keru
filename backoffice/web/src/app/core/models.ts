@@ -46,6 +46,13 @@ export interface Page<T> {
   pageSize: number;
 }
 
+export interface PatientCard {
+  id: string;
+  fullName: string;
+  age: number;
+  mainCondition: string;
+}
+
 export interface DashboardMetrics {
   caregivers: Record<string, number>;
   requests: Record<string, number>;

@@ -48,6 +48,10 @@ import { AuthService } from '../core/auth.service';
             <mat-icon matListItemIcon>gavel</mat-icon>
             <span matListItemTitle>Moderación</span>
           </a>
+          <a mat-list-item routerLink="/support" routerLinkActive="active">
+            <mat-icon matListItemIcon>support_agent</mat-icon>
+            <span matListItemTitle>Soporte</span>
+          </a>
           <a mat-list-item routerLink="/audit" routerLinkActive="active">
             <mat-icon matListItemIcon>receipt_long</mat-icon>
             <span matListItemTitle>Auditoría</span>

@@ -66,7 +66,7 @@ export class HiringAccess {
   // --- Asignaciones ---
 
   activateAssignment(
-    input: { caregiverId: string; patientId: string; requestId: string; periodStart: Date; periodEnd: Date; provenance: string },
+    input: { caregiverId: string; patientId: string; requestId: string | null; periodStart: Date; periodEnd: Date; provenance: string },
     manager?: EntityManager,
   ): Promise<Assignment> {
     const repo = manager ? manager.getRepository(Assignment) : this.assignments;

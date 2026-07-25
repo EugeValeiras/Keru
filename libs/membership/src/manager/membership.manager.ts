@@ -218,6 +218,23 @@ export class MembershipManager {
     return this.caregiverAccess.countByStatus();
   }
 
+  /** Búsqueda de pacientes (soporte back-office). */
+  async searchPatients(
+    q: string | undefined,
+    page: number,
+    pageSize: number,
+  ): Promise<{ items: RegisteredPatient[]; total: number; page: number; pageSize: number }> {
+    const take = Math.min(Math.max(pageSize, 1), 100);
+    const safePage = Math.max(page, 1);
+    const [patients, total] = await this.accountAccess.searchPatients(q, (safePage - 1) * take, take);
+    return {
+      items: patients.map((p) => ({ patient: p, age: this.deriveAge(p.birthDate) })),
+      total,
+      page: safePage,
+      pageSize: take,
+    };
+  }
+
   async approveCaregiver(caregiverId: string, adminId: string): Promise<Caregiver> {
     const caregiver = await this.requireCaregiver(caregiverId);
     await this.caregiverAccess.setStatus(caregiver.id, 'approved', adminId, null, new Date());

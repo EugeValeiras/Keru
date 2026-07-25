@@ -244,6 +244,40 @@ export class HiringManager {
     return { assignmentsClosed: assignments.length, requestsExpired: requests.length };
   }
 
+  /** UC-05/NFR-40 · Asignación manual del admin (soporte/casos especiales). Auditada, con provenance. */
+  async manualAssign(
+    caregiverId: string,
+    patientId: string,
+    startDate: Date,
+    endDate: Date,
+    adminId: string,
+  ): Promise<Assignment> {
+    const caregiver = await this.caregiverAccess.findById(caregiverId);
+    if (!caregiver || caregiver.status !== 'approved') {
+      throw new BadRequestException('El cuidador no está disponible (debe estar aprobado)');
+    }
+    // NFR-35: no duplicar una asignación activa con el mismo par.
+    const active = await this.hiringAccess.listActiveAssignmentsForCaregiver(caregiverId);
+    if (active.some((a) => a.patientId === patientId)) {
+      throw new BadRequestException('Ya existe una asignación activa entre este cuidador y paciente');
+    }
+    const assignment = await this.hiringAccess.activateAssignment({
+      caregiverId,
+      patientId,
+      requestId: null,
+      periodStart: startDate,
+      periodEnd: endDate,
+      provenance: 'manual',
+    });
+    await this.audit.record({
+      action: 'hiring.assignment.manual',
+      actor: adminId,
+      target: { type: 'assignment', id: assignment.id },
+      metadata: { caregiverId, patientId },
+    });
+    return assignment;
+  }
+
   /** Métricas de contratación para el dashboard del back-office. */
   async dashboardMetrics(): Promise<{ requests: Record<string, number>; activeAssignments: number }> {
     const [requests, activeAssignments] = await Promise.all([

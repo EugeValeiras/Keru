@@ -12,6 +12,7 @@ import { MembershipController } from './membership.controller';
 import { AuthController } from './auth.controller';
 import { CaregiverController } from './caregiver.controller';
 import { AdminCaregiverController } from './admin-caregiver.controller';
+import { AdminPatientController } from './admin-patient.controller';
 import { InvitationController } from './invitation.controller';
 
 /**
@@ -28,6 +29,7 @@ import { InvitationController } from './invitation.controller';
     MembershipController,
     CaregiverController,
     AdminCaregiverController,
+    AdminPatientController,
     InvitationController,
   ],
   providers: [AccountAccess, CaregiverAccess, MembershipManager],

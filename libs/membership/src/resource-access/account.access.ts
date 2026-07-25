@@ -137,6 +137,13 @@ export class AccountAccess {
     return this.patients.findOne({ where: { id } });
   }
 
+  /** Búsqueda de pacientes por nombre (soporte back-office). */
+  searchPatients(q: string | undefined, skip: number, take: number): Promise<[Patient[], number]> {
+    const qb = this.patients.createQueryBuilder('p').orderBy('p.createdAt', 'DESC').skip(skip).take(take);
+    if (q) qb.andWhere('p."fullName" ILIKE :q', { q: `%${q}%` });
+    return qb.getManyAndCount();
+  }
+
   /** Busca un candidato duplicado del mismo humano (nombre + fecha de nacimiento). Residuo #21. */
   findDuplicateCandidate(fullName: string, birthDate: string): Promise<Patient | null> {
     return this.patients.findOne({ where: { fullName, birthDate } });

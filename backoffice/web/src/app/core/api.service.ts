@@ -9,6 +9,7 @@ import {
   DashboardMetrics,
   ModeratedReview,
   Page,
+  PatientCard,
   PlatformRange,
   RangeVersion,
 } from './models';
@@ -98,5 +99,16 @@ export class ApiService {
 
   publishReview(id: string): Observable<ModeratedReview> {
     return this.http.post<ModeratedReview>(`${this.base}/admin/reviews/${id}/publish`, {});
+  }
+
+  // --- Soporte + asignación manual (UC-05/NFR-40) ---
+  searchPatients(q?: string): Observable<Page<PatientCard>> {
+    let params = new HttpParams().set('page', 1).set('pageSize', 30);
+    if (q) params = params.set('q', q);
+    return this.http.get<Page<PatientCard>>(`${this.base}/admin/patients`, { params });
+  }
+
+  manualAssign(caregiverId: string, patientId: string, startDate: string, endDate: string): Observable<unknown> {
+    return this.http.post(`${this.base}/admin/assignments`, { caregiverId, patientId, startDate, endDate });
   }
 }

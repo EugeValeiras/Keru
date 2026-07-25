@@ -532,6 +532,51 @@
         ]
       }
     },
+    "/api/v1/admin/patients": {
+      "get": {
+        "operationId": "AdminPatientController_search_v1",
+        "parameters": [
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Página de pacientes"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Buscar pacientes por nombre (paginado)",
+        "tags": [
+          "Support"
+        ]
+      }
+    },
     "/api/v1/patients/{patientId}/invitations": {
       "post": {
         "operationId": "InvitationController_issue_v1",
@@ -1087,6 +1132,36 @@
         "summary": "UC-10 · Rechazar solicitud",
         "tags": [
           "Caregiver requests"
+        ]
+      }
+    },
+    "/api/v1/admin/assignments": {
+      "post": {
+        "operationId": "AdminAssignmentController_assign_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ManualAssignDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Asignación creada"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "UC-05/NFR-40 · Crear asignación manual (auditada, provenance=manual)",
+        "tags": [
+          "Support"
         ]
       }
     },
@@ -2793,6 +2868,33 @@
           "periodStart",
           "periodEnd",
           "status"
+        ]
+      },
+      "ManualAssignDto": {
+        "type": "object",
+        "properties": {
+          "caregiverId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "patientId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "startDate": {
+            "type": "string",
+            "example": "2026-08-01T08:00:00Z"
+          },
+          "endDate": {
+            "type": "string",
+            "example": "2026-08-31T18:00:00Z"
+          }
+        },
+        "required": [
+          "caregiverId",
+          "patientId",
+          "startDate",
+          "endDate"
         ]
       },
       "MetricValueDto": {
