@@ -25,6 +25,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/caregivers/detail').then((m) => m.Detail),
       },
       {
+        path: 'ranges',
+        loadComponent: () => import('./features/ranges/ranges').then((m) => m.Ranges),
+      },
+      {
         path: 'audit',
         loadComponent: () => import('./features/audit/audit').then((m) => m.Audit),
       },

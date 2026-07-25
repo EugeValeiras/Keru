@@ -56,7 +56,7 @@ export class CareRecordManager {
 
       // Evaluar cada valor contra su rango y, si está fuera, alertar al círculo (atómico).
       for (const v of dto.values) {
-        const range = this.rangeAccess.getApplicableRange(v.metricKey, patientId);
+        const range = await this.rangeAccess.getApplicableRange(v.metricKey, patientId);
         const evaluation = this.alertEngine.evaluateVital(v.value, range);
         if (!evaluation.outOfRange) continue;
 

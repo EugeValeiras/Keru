@@ -40,6 +40,10 @@ import { AuthService } from '../core/auth.service';
             <mat-icon matListItemIcon>how_to_reg</mat-icon>
             <span matListItemTitle>Cuidadores</span>
           </a>
+          <a mat-list-item routerLink="/ranges" routerLinkActive="active">
+            <mat-icon matListItemIcon>tune</mat-icon>
+            <span matListItemTitle>Rangos clínicos</span>
+          </a>
           <a mat-list-item routerLink="/audit" routerLinkActive="active">
             <mat-icon matListItemIcon>receipt_long</mat-icon>
             <span matListItemTitle>Auditoría</span>

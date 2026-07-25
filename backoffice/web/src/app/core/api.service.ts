@@ -1,7 +1,16 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { AuditEntry, Badges, CaregiverCard, CaregiverDetail, DashboardMetrics, Page } from './models';
+import {
+  AuditEntry,
+  Badges,
+  CaregiverCard,
+  CaregiverDetail,
+  DashboardMetrics,
+  Page,
+  PlatformRange,
+  RangeVersion,
+} from './models';
 
 /** Cliente del back-office contra el BFF (`/bff/api/*` -> Keru API). */
 @Injectable({ providedIn: 'root' })
@@ -60,5 +69,18 @@ export class ApiService {
       `${this.base}/admin/ops/sweep`,
       {},
     );
+  }
+
+  // --- Rangos clínicos (UC-18) ---
+  ranges(): Observable<PlatformRange[]> {
+    return this.http.get<PlatformRange[]>(`${this.base}/admin/ranges`);
+  }
+
+  setRange(metricKey: string, min: number, max: number): Observable<RangeVersion> {
+    return this.http.put<RangeVersion>(`${this.base}/admin/ranges/${metricKey}`, { min, max });
+  }
+
+  rangeHistory(metricKey: string): Observable<RangeVersion[]> {
+    return this.http.get<RangeVersion[]>(`${this.base}/admin/ranges/${metricKey}/history`);
   }
 }

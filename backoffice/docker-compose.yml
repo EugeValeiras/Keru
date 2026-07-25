@@ -1,0 +1,30 @@
+# Back-office independiente del compose de la raíz de Keru.
+# Requiere que la API de Keru esté corriendo en el host (puerto 3000):
+#   (en la raíz)  npm run app:up     # o  npm run start:dev
+# Luego:
+#   (en backoffice)  docker compose up --build
+# Back-office en http://localhost:8080  (login: admin@test.com / S3gura!123)
+services:
+  bff:
+    build: ./bff
+    container_name: keru-bo-bff
+    restart: unless-stopped
+    environment:
+      PORT: 3001
+      NODE_ENV: production
+      # El BFF alcanza la API real de Keru en el host (compose separado).
+      KERU_API_URL: http://host.docker.internal:3000/api/v1
+      COOKIE_NAME: keru_bo_session
+      COOKIE_SECURE: 'false'
+      WEB_ORIGIN: http://localhost:8080
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+
+  web:
+    build: ./web
+    container_name: keru-bo-web
+    restart: unless-stopped
+    ports:
+      - '8080:80'
+    depends_on:
+      - bff

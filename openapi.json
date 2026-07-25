@@ -1307,6 +1307,141 @@
         ]
       }
     },
+    "/api/v1/admin/ranges": {
+      "get": {
+        "operationId": "AdminRangeController_listRanges_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Lista de rangos por métrica"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Rangos de plataforma vigentes (con plausibilidad y versión)",
+        "tags": [
+          "Ranges"
+        ]
+      }
+    },
+    "/api/v1/admin/ranges/{metricKey}/history": {
+      "get": {
+        "operationId": "AdminRangeController_history_v1",
+        "parameters": [
+          {
+            "name": "metricKey",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "NFR-28 · Historial de versiones de un rango de plataforma",
+        "tags": [
+          "Ranges"
+        ]
+      }
+    },
+    "/api/v1/admin/ranges/{metricKey}": {
+      "put": {
+        "operationId": "AdminRangeController_setPlatformRange_v1",
+        "parameters": [
+          {
+            "name": "metricKey",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetRangeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "NFR-18 · Setear el rango de plataforma (crea una versión nueva)",
+        "tags": [
+          "Ranges"
+        ]
+      }
+    },
+    "/api/v1/admin/patients/{patientId}/ranges/{metricKey}": {
+      "put": {
+        "operationId": "AdminRangeController_setPatientRange_v1",
+        "parameters": [
+          {
+            "name": "patientId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "metricKey",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetRangeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "NFR-17 · Setear override de rango por paciente",
+        "tags": [
+          "Ranges"
+        ]
+      }
+    },
     "/api/v1/patients/{patientId}/state": {
       "get": {
         "operationId": "CareConsultController_state_v1",
@@ -2747,6 +2882,23 @@
           "body",
           "read",
           "createdAt"
+        ]
+      },
+      "SetRangeDto": {
+        "type": "object",
+        "properties": {
+          "min": {
+            "type": "number",
+            "example": 90
+          },
+          "max": {
+            "type": "number",
+            "example": 140
+          }
+        },
+        "required": [
+          "min",
+          "max"
         ]
       },
       "SubmitReviewDto": {

@@ -52,6 +52,31 @@ export interface DashboardMetrics {
   activeAssignments: number;
 }
 
+export interface PlatformRange {
+  metricKey: string;
+  label: string;
+  unit: string;
+  min: number;
+  max: number;
+  version: string;
+  source: 'db' | 'catalog';
+  plausible: { min: number; max: number };
+}
+
+export interface RangeVersion {
+  id: string;
+  metricKey: string;
+  scope: string;
+  min: number;
+  max: number;
+  version: string;
+  active: boolean;
+  createdBy: string;
+  createdByRole: string;
+  effectiveFrom: string;
+  supersededAt: string | null;
+}
+
 export interface AuditEntry {
   id: string;
   action: string;
