@@ -24,7 +24,7 @@ La identidad visible (**nombre + avatar**) de la **persona detrás de un login**
 ### 2. Cuidador — identidad derivada de la cuenta (Opción A)
 `Caregiver` **deja de tener** `displayName`/`photoUrl` propios. Su identidad visible (header, cards del marketplace, ficha, perfil propio) se **resuelve desde su `Account`** por `accountId`, con un **join intra-dominio** dentro de `CaregiverAccess` (Membership). Hiring sigue leyendo el perfil de cuidador **enriquecido** por la read-replica de `CaregiverAccess` — **sin nuevo acoplamiento cross-dominio** (§3.5 intacto: Hiring nunca joina `account`; recibe la vista ya resuelta por Membership).
 
-El **único punto de escritura** del nombre/foto de un cuidador pasa a ser **`PATCH /accounts/me`** (UC-23). Editar en `/perfil` se refleja en el header **y** en el marketplace/ficha **por construcción** (hay un solo lugar donde vive el dato).
+El **único punto de escritura** del nombre/foto de un cuidador pasa a ser **`PATCH /accounts/me`** (UC-23) *(ampliado por #49: también el administrador por `PATCH /admin/caregivers/:id`, ver la nota de actualización más abajo)*. Editar en `/perfil` se refleja en el header **y** en el marketplace/ficha **por construcción** (hay un solo lugar donde vive el dato).
 
 - **Registro de cuidador (UC-02):** ya **no** pide `displayName` (usa el de la cuenta). Si el formulario ofrece subir una foto, esa foto se setea en la **`Account`** (Membership es dueño de ambas), no en el perfil.
 - **Back-office (`listPaged`, UC-19):** el filtro por nombre que consultaba `caregiver.displayName` ahora resuelve el nombre por **join con `account`** (intra-dominio).
