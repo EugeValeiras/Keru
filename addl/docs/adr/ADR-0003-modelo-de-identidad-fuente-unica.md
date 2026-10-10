@@ -3,7 +3,7 @@
 - **Estado:** Aceptado (2026-07-23)
 - **Decisores:** Eugenio Valeiras (product owner) + agente supervisor
 - **Referenciado desde:** `constitution.md §2 (principio de identidad)`, `§3.3 (dueño de escritura)`, `§7 (decisión abierta UC-02 A3 acotada)`; `Keru-Casos-de-Uso-MVP.md` UC-01/02/22/23 y §5 (modelo de dominio)
-- **Tareas:** KER-54 (esta decisión). Base de KER-50 (authz + identidad de paciente) y KER-51 (editar ficha/avatar).
+- **Tareas:** KER-54 (esta decisión). Base de KER-50 (authz + identidad de paciente) y KER-51 (editar ficha/avatar). **#49** agrega el segundo punto de escritura (administrador) sobre la misma fuente (ver nota de actualización en §2).
 
 ## Contexto
 
@@ -24,10 +24,12 @@ La identidad visible (**nombre + avatar**) de la **persona detrás de un login**
 ### 2. Cuidador — identidad derivada de la cuenta (Opción A)
 `Caregiver` **deja de tener** `displayName`/`photoUrl` propios. Su identidad visible (header, cards del marketplace, ficha, perfil propio) se **resuelve desde su `Account`** por `accountId`, con un **join intra-dominio** dentro de `CaregiverAccess` (Membership). Hiring sigue leyendo el perfil de cuidador **enriquecido** por la read-replica de `CaregiverAccess` — **sin nuevo acoplamiento cross-dominio** (§3.5 intacto: Hiring nunca joina `account`; recibe la vista ya resuelta por Membership).
 
-El **único punto de escritura** del nombre/foto de un cuidador pasa a ser **`PATCH /accounts/me`** (UC-23). Editar en `/perfil` se refleja en el header **y** en el marketplace/ficha **por construcción** (hay un solo lugar donde vive el dato).
+El **único punto de escritura** del nombre/foto de un cuidador pasa a ser **`PATCH /accounts/me`** (UC-23) *(ampliado por #49: también el administrador por `PATCH /admin/caregivers/:id`, ver la nota de actualización más abajo)*. Editar en `/perfil` se refleja en el header **y** en el marketplace/ficha **por construcción** (hay un solo lugar donde vive el dato).
 
 - **Registro de cuidador (UC-02):** ya **no** pide `displayName` (usa el de la cuenta). Si el formulario ofrece subir una foto, esa foto se setea en la **`Account`** (Membership es dueño de ambas), no en el perfil.
 - **Back-office (`listPaged`, UC-19):** el filtro por nombre que consultaba `caregiver.displayName` ahora resuelve el nombre por **join con `account`** (intra-dominio).
+
+> **Actualización (#49, 2026-10-10) — segundo punto de escritura de la identidad del cuidador.** El back-office (UC-19 A3) puede **corregir** el nombre y la foto de un cuidador por `PATCH /admin/caregivers/:id`. Membership resuelve la `Account` por `caregiver.accountId` (intra-dominio) y la escribe con el **mismo** verbo `AccountAccess.updateAccount` que usa `PATCH /accounts/me`. La **fuente única no cambia**: sigue siendo `Account`; el perfil de cuidador sigue **sin** columnas de identidad y deriva nombre/foto de su cuenta, así que el cambio hecho por el admin se ve igual en el header del cuidador, en el marketplace y en la ficha, **por construcción** (no hay copia que sincronizar). Lo que cambia es que ahora hay **dos puntos de escritura** —titular (UC-23) y administrador (UC-19 A3)— sobre **una** fuente, ambos dentro de Membership (constitution §3.3). La edición del admin exige step-up (NFR-33) y queda auditada; no re-verifica nada: quien edita es el verificador.
 
 #### Sub-decisión registrada (no silenciosa): nombre editable vs. re-verificación
 Unificar el nombre implica que un cuidador **aprobado puede cambiar su nombre visible** vía su cuenta — antes **UC-02 A3** lo bloqueaba (lo trataba como credencial revisada). Se **acota** la decisión abierta de **§7 (UC-02 A3)** a **certificaciones y especialidades**: **nombre y foto no son credenciales verificadas** (la **insignia de identidad**, NFR-19/UC-19, es un artefacto separado que **no** se toca por editar el nombre), por lo que un cambio de nombre/foto **no** dispara re-verificación. **Justificación:** feedback del usuario (3×) pidiendo identidad unificada, y el nombre de la cuenta ya es libremente editable (UC-23). La re-verificación de **credenciales** (certificaciones/especialidades) sigue como decisión abierta en §7.
